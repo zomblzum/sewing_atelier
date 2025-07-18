@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Клиенты{% endblock %}
+
+{% block content %}
+<h1>Клиенты</h1>
+<a href="{% url 'customer_create' %}" class="btn btn-primary mb-3">Добавить клиента</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Имя</th>
+            <th>Фамилия</th>
+            <th>Телефон</th>
+            <th>Дата создания</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for customer in customers %}
+        <tr>
+            <td>{{ customer.first_name }}</td>
+            <td>{{ customer.last_name }}</td>
+            <td>{{ customer.phone }}</td>
+            <td>{{ customer.created_at|date:"d.m.Y H:i" }}</td>
+            <td class="d-flex gap-2">
+                <a href="{% url 'customer_detail' pk=customer.pk %}" class="btn btn-sm btn-info">Просмотр</a>
+                <a href="{% url 'customer_edit' pk=customer.pk %}" class="btn btn-sm btn-warning">Редактировать</a>
+                <form method="post" action="{% url 'customer_delete' pk=customer.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger" 
+                            onclick="return confirm('Удалить клиента {{ customer.first_name }} {{ customer.last_name }}?')">
+                        Удалить
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
