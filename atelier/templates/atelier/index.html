@@ -232,7 +232,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Initializing Sortable...');
@@ -322,5 +322,31 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Forced flex layout');
     }
 });
+</script>
+
+
+<script>
+// Принудительная инициализация через 2 секунды
+setTimeout(function() {
+    console.log('Manual initialization...');
+    
+    const slots = document.querySelectorAll('.orders-container');
+    console.log('Found containers:', slots.length);
+    
+    slots.forEach(container => {
+        try {
+            new Sortable(container, {
+                group: 'orders',
+                animation: 150,
+                onAdd: function(evt) {
+                    console.log('Item added to slot');
+                }
+            });
+            console.log('Container initialized');
+        } catch (e) {
+            console.error('Error initializing:', e);
+        }
+    });
+}, 2000);
 </script>
 {% endblock %}
