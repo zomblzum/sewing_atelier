@@ -249,41 +249,42 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded - initializing Sortable');
+console.log('=== DEBUG: Script started ===');
+
+// Простая проверка доступности элементов
+function checkElements() {
+    console.log('Checking elements...');
+    console.log('Force init button:', document.getElementById('force-init'));
+    console.log('Planner grid:', document.getElementById('planner-grid'));
+    console.log('Unplanned orders:', document.getElementById('unplanned-orders'));
+    console.log('Order containers:', document.querySelectorAll('.orders-container').length);
+}
+
+// Функция инициализации Sortable
+function initializeSortable() {
+    console.log('=== Initializing Sortable ===');
     
-    // Функция инициализации Sortable
-    function initializeSortable() {
-        console.log('Initializing Sortable...');
-        
+    try {
         // 1. Инициализация незапланированных заказов
         const unplannedContainer = document.getElementById('unplanned-orders');
         if (unplannedContainer) {
-            try {
-                new Sortable(unplannedContainer, {
-                    group: {
-                        name: 'orders',
-                        pull: 'clone',
-                        put: false
-                    },
-                    sort: false,
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
-                    onEnd: function(evt) {
-                        if (evt.to !== evt.from) {
-                            setTimeout(() => {
-                                if (evt.from && evt.item) {
-                                    evt.from.appendChild(evt.item);
-                                    console.log('Element returned to source');
-                                }
-                            }, 100);
-                        }
+            console.log('Initializing unplanned container');
+            new Sortable(unplannedContainer, {
+                group: { name: 'orders', pull: 'clone', put: false },
+                sort: false,
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function(evt) {
+                    console.log('Drag ended');
+                    if (evt.to !== evt.from) {
+                        setTimeout(() => {
+                            if (evt.from && evt.item) {
+                                evt.from.appendChild(evt.item);
+                            }
+                        }, 100);
                     }
-                });
-                console.log('Unplanned orders initialized');
-            } catch (e) {
-                console.error('Error with unplanned:', e);
-            }
+                }
+            });
         }
 
         // 2. Инициализация всех слотов времени
@@ -291,78 +292,70 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Found containers:', slotContainers.length);
         
         slotContainers.forEach(container => {
-            try {
-                new Sortable(container, {
-                    group: 'orders',
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
-                    onAdd: function(evt) {
-                        const orderId = evt.item.dataset.orderId;
-                        const slotElement = evt.to.closest('.hour-slot');
-                        if (slotElement) {
-                            const date = slotElement.dataset.date;
-                            const hour = slotElement.dataset.hour;
-                            console.log('Order moved:', orderId, 'to', date, hour);
-                            updateOrderPlanning(orderId, date, hour);
-                        }
+            new Sortable(container, {
+                group: 'orders',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onAdd: function(evt) {
+                    const orderId = evt.item.dataset.orderId;
+                    const slotElement = evt.to.closest('.hour-slot');
+                    if (slotElement) {
+                        const date = slotElement.dataset.date;
+                        const hour = slotElement.dataset.hour;
+                        console.log('Order moved:', orderId, 'to', date, hour);
                     }
-                });
-                console.log('Container initialized');
-            } catch (e) {
-                console.error('Error initializing container:', e);
-            }
+                }
+            });
         });
         
-        console.log('Sortable initialization complete');
+        console.log('=== Sortable initialized successfully ===');
+        return true;
+    } catch (error) {
+        console.error('Initialization error:', error);
+        return false;
     }
+}
 
-    // Функция обновления планирования
-    function updateOrderPlanning(orderId, date, hour) {
-        fetch('{% url "update_order_planning" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({
-                order_id: orderId,
-                planned_date: date,
-                planned_start_time: hour + ':00'
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Order updated successfully');
-                // Можно обновить интерфейс без перезагрузки
-            } else {
-                console.error('Error:', data.error);
-                alert('Ошибка: ' + data.error);
-                window.location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('Network error:', error);
-            alert('Ошибка сети: ' + error);
-            window.location.reload();
-        });
+// Основной код
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== DOM fully loaded ===');
+    checkElements();
+    
+    // Проверяем доступность Sortable
+    if (typeof Sortable === 'undefined') {
+        console.error('SortableJS is not loaded!');
+        alert('Ошибка: Библиотека SortableJS не загрузилась. Проверьте консоль для деталей.');
+        return;
     }
-
+    
+    console.log('SortableJS is available');
+    
     // Инициализация при загрузке
-    setTimeout(initializeSortable, 500);
-    
-    // Кнопка принудительной инициализации
-    document.getElementById('force-init').addEventListener('click', function() {
-        console.log('Manual initialization triggered');
+    setTimeout(() => {
+        console.log('Initializing on load...');
         initializeSortable();
-        alert('Перетаскивание переинициализировано. Проверьте консоль для details.');
-    });
+    }, 1000);
     
-    // Принудительно применяем горизонтальное расположение
-    const plannerGrid = document.getElementById('planner-grid');
-    if (plannerGrid) {
-        plannerGrid.classList.add('force-row');
+    // Обработчик кнопки
+    const forceInitButton = document.getElementById('force-init');
+    if (forceInitButton) {
+        forceInitButton.addEventListener('click', function() {
+            console.log('=== Manual initialization triggered ===');
+            checkElements();
+            const success = initializeSortable();
+            alert(success ? 
+                'Перетаскивание инициализировано успешно! Проверьте консоль.' :
+                'Произошла ошибка при инициализации. Проверьте консоль.'
+            );
+        });
+    } else {
+        console.error('Force init button not found!');
     }
 });
+
+// Проверка сразу после загрузки скрипта
+console.log('=== Script loaded, waiting for DOM ===');
+checkElements();
 </script>
 {% endblock %}
+
