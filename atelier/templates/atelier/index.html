@@ -11,16 +11,29 @@
     width: 100%;
     overflow-x: auto;
     margin: 20px 0;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
 }
 
 .planner-wrapper {
     display: flex;
-    gap: 0;
+    min-width: max-content;
 }
 
 .time-column {
     flex: 0 0 60px;
-    margin-top: 60px; /* Совпадает с высотой заголовка */
+    background: #f8f9fa;
+}
+
+.time-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    background: white;
+    border-bottom: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
 }
 
 .time-slot {
@@ -36,8 +49,6 @@
 
 .planner-grid {
     display: flex;
-    flex-direction: row;
-    gap: 0;
     flex: 1;
 }
 
@@ -53,7 +64,7 @@
 
 .planner-header {
     text-align: center;
-    padding: 15px 10px;
+    padding: 10px 5px;
     background: white;
     border-bottom: 1px solid #dee2e6;
     border-right: 1px solid #dee2e6;
@@ -163,6 +174,21 @@
     max-width: 200px;
 }
 
+/* Стили для Sortable */
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-chosen {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.sortable-drag {
+    opacity: 0.9;
+    transform: rotate(3deg);
+}
+
+/* Заголовок секции */
 .section-title {
     font-size: 18px;
     margin-bottom: 15px;
@@ -194,8 +220,8 @@
     <div class="planner-wrapper">
         <!-- Колонка с временами -->
         <div class="time-column">
-            <div class="planner-header" style="border-right: none; visibility: hidden;">
-                <h5>Время</h5>
+            <div class="time-header">
+                Время
             </div>
             {% for hour in hours %}
             <div class="time-slot">
@@ -205,7 +231,7 @@
         </div>
         
         <!-- Основная сетка планера -->
-        <div class="planner-grid" id="planner-grid">
+        <div class="planner-grid">
             {% for day in days %}
             <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
                  data-date="{{ day.date|date:'Y-m-d' }}">
@@ -286,6 +312,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Инициализация планера...');
@@ -337,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const date = slotElement.dataset.date;
                         const hour = slotElement.dataset.hour;
                         
-                        console.log('Заказ перемещён:', orderId, 'на', date, hour + ':00');
+                        console.log('Заказ перемещен:', orderId, 'на', date, hour + ':00');
                         updateOrderPlanning(orderId, date, hour);
                     }
                 }
@@ -364,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Заказ успешно обновлён');
+                console.log('Заказ успешно обновлен');
                 // Плавное обновление страницы через 0.5 секунды
                 setTimeout(() => {
                     window.location.reload();
