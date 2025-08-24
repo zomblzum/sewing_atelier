@@ -6,12 +6,12 @@
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
-/* Основные стили планера */
+/* Основные стили планера - обновленные */
 .planner-container {
     width: 100%;
     overflow-x: auto;
     margin: 20px 0;
-    border: 1px solid #ddd;
+    border: 1px solid #ddd !important;
     border-radius: 8px;
     background-color: #fff;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -25,14 +25,14 @@
 }
 
 .planner-column {
-    flex: 0 0 600px; /* Увеличил ширину колонок */
+    flex: 0 0 500px; /* Увеличил ширину колонок */
     background: #f8f9fa;
     min-height: 700px;
-    border-right: 1px solid #dee2e6; /* Граница между колонками */
+    border-right: 1px solid #dee2e6 !important; /* Граница между колонками */
 }
 
 .planner-column:last-child {
-    border-right: none;
+    border-right: none !important;
 }
 
 .planner-column.weekend {
@@ -45,7 +45,7 @@
     margin-bottom: 0;
     padding: 12px;
     background: white;
-    border-bottom: 1px solid #dee2e6; /* Граница под заголовком */
+    border-bottom: 1px solid #dee2e6 !important; /* Граница под заголовком */
 }
 
 .hour-slots {
@@ -55,7 +55,7 @@
 
 .hour-slot {
     background: white;
-    border-bottom: 1px solid #dee2e6; /* Граница между ячейками */
+    border-bottom: 1px solid #dee2e6 !important; /* Граница между ячейками */
     padding: 12px;
     min-height: 90px;
     position: relative;
@@ -65,9 +65,10 @@
     overflow: hidden;
 }
 
-.hour-slot.empty {
-    background-color: #f0f0f0; /* Светло-серый для пустых ячеек */
-    border: 1px dashed #ccc;
+/* Более специфичный селектор для пустых ячеек */
+div.hour-slot.empty {
+    background-color: #f0f0f0 !important; /* Светло-серый для пустых ячеек */
+    border: 1px dashed #ccc !important;
 }
 
 .hour-label {
