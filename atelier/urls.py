@@ -29,4 +29,5 @@ urlpatterns = [
     path('categories/<int:pk>/delete/', views.category_delete, name='category_delete'),    
 
     path('api/category/<int:pk>/price/', views.get_category_price, name='category_price'),
+    path('check-day-limit/', views.check_day_limit, name='check_day_limit'),
 ]

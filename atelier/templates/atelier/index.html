@@ -311,43 +311,77 @@ document.addEventListener('DOMContentLoaded', function() {
     // 2. Упрощенная инициализация колонок дней
     const dayColumns = document.querySelectorAll('.orders-container');
     
-    dayColumns.forEach(container => {
-        try {
-            new Sortable(container, {
-                group: 'orders',
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                dragClass: 'sortable-drag',
-                onAdd: function(evt) {
-                    const orderId = evt.item.dataset.orderId;
-                    const columnElement = evt.to.closest('.planner-column');
-                    if (!orderId || !columnElement) return;
-                    
-                    const date = columnElement.dataset.date;
-                    
-                    // Определяем порядок в колонке
-                    const orders = evt.to.querySelectorAll('.order-brick');
-                    let orderInDay = -1;
-                    
-                    for (let i = 0; i < orders.length; i++) {
-                        if (orders[i] === evt.item) {
-                            orderInDay = i;
-                            break;
-                        }
-                    }
-                    
-                    if (orderInDay >= 0) {
-                        console.log('Заказ перемещен:', orderId, 'на', date, 'позиция', orderInDay);
-                        updateOrderPlanning(orderId, date, orderInDay);
-                    }
+dayColumns.forEach(container => {
+    try {
+        const columnElement = container.closest('.planner-column');
+        const totalDayMinutes = parseInt(columnElement?.dataset?.totalMinutes || '480');
+        
+        new Sortable(container, {
+            group: {
+                name: 'orders',
+                put: function(to, from, dragEl) {
+                    // Упрощенная проверка - всегда разрешаем для теста
+                    console.log('Попытка перемещения в колонку');
+                    return true;
                 }
-            });
-            console.log('Колонка инициализирована');
-        } catch (e) {
-            console.error('Ошибка инициализации колонки:', e);
-        }
+            },
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            onAdd: function(evt) {
+                const orderId = evt.item.dataset.orderId;
+                const columnElement = evt.to.closest('.planner-column');
+                if (!orderId || !columnElement) return;
+                
+                const date = columnElement.dataset.date;
+                
+                // Проверяем лимит времени ПОСЛЕ перемещения
+                checkDayLimit(columnElement, orderId).then(canAdd => {
+                    if (canAdd) {
+                        const orders = evt.to.querySelectorAll('.order-brick');
+                        let orderInDay = Array.from(orders).indexOf(evt.item);
+                        
+                        if (orderInDay >= 0) {
+                            updateOrderPlanning(orderId, date, orderInDay);
+                        }
+                    } else {
+                        // Возвращаем элемент обратно
+                        if (evt.from && evt.item) {
+                            evt.from.appendChild(evt.item);
+                        }
+                        alert('Превышен лимит времени в этом дне!');
+                    }
+                });
+            }
+        });
+    } catch (e) {
+        console.error('Ошибка инициализации колонки:', e);
+    }
+});
+
+// Функция проверки лимита на сервере
+function checkDayLimit(columnElement, orderId) {
+    const date = columnElement.dataset.date;
+    
+    return fetch('{% url "check_day_limit" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            order_id: orderId,
+            planned_date: date
+        })
+    })
+    .then(response => response.json())
+    .then(data => data.can_add)
+    .catch(error => {
+        console.error('Ошибка проверки лимита:', error);
+        return true; // Разрешаем в случае ошибки
     });
+}
 
     // Функция обновления планирования
     function updateOrderPlanning(orderId, date, orderInDay) {
