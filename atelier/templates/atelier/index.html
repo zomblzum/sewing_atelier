@@ -13,117 +13,154 @@
     margin: 20px 0;
 }
 
+.planner-wrapper {
+    display: flex;
+    gap: 0;
+}
+
+.time-column {
+    flex: 0 0 60px;
+    margin-top: 60px; /* Совпадает с высотой заголовка */
+}
+
+.time-slot {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #6c757d;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+}
+
 .planner-grid {
     display: flex;
     flex-direction: row;
-    gap: 15px;
-    padding: 10px;
-    min-width: max-content;
+    gap: 0;
+    flex: 1;
 }
 
 .planner-column {
-    flex: 0 0 280px;
+    flex: 1;
+    min-width: 150px;
     background: #f8f9fa;
-    border-radius: 10px;
-    padding: 15px;
-    min-height: 700px;
 }
 
 .planner-column.weekend {
     background: #e9ecef;
-    opacity: 0.9;
 }
 
 .planner-header {
     text-align: center;
-    margin-bottom: 15px;
-    padding: 12px;
+    padding: 15px 10px;
     background: white;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.planner-header h5 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.planner-header small {
+    font-size: 11px;
+    color: #6c757d;
 }
 
 .hour-slots {
     display: flex;
     flex-direction: column;
-    gap: 10px;
 }
 
 .hour-slot {
+    height: 60px;
     background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 12px;
-    min-height: 90px;
+    border-bottom: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
     position: relative;
+    padding: 2px;
 }
 
 .hour-slot.empty {
     background-color: #f8f9fa;
-    border: 1px dashed #dee2e6;
-}
-
-.hour-label {
-    position: absolute;
-    top: 5px;
-    left: 8px;
-    font-size: 11px;
-    color: #6c757d;
-    font-weight: bold;
 }
 
 .order-card {
-    border-radius: 6px;
-    padding: 10px;
-    margin: 5px 0;
+    border-radius: 4px;
+    padding: 4px;
     color: white;
-    font-size: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    font-size: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     cursor: grab;
     border: none;
-    transition: all 0.2s ease;
+    height: 54px;
+    overflow: hidden;
 }
 
 .order-card:active {
     cursor: grabbing;
-    transform: rotate(2deg);
-}
-
-.order-card:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transform: rotate(1deg);
 }
 
 .order-card h6 {
-    margin: 0 0 4px 0;
-    font-size: 12px;
+    margin: 0 0 2px 0;
+    font-size: 10px;
     font-weight: bold;
-    line-height: 1.2;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .order-card p {
-    margin: 2px 0;
-    font-size: 11px;
-    line-height: 1.1;
+    margin: 1px 0;
+    font-size: 9px;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.order-card .order-info {
+    display: flex;
+    justify-content: space-between;
+}
+
+.order-card .order-info span {
+    flex: 1;
 }
 
 .status-badge {
-    font-size: 10px;
-    padding: 2px 5px;
+    font-size: 8px;
+    padding: 1px 3px;
+    margin-top: 2px;
+    display: inline-block;
 }
 
 .unplanned-section {
     background: #f8f9fa;
-    padding: 20px;
-    border-radius: 10px;
-    margin-top: 30px;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 20px;
 }
 
 .unplanned-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
-    margin-top: 15px;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.unplanned-order {
+    flex: 0 0 calc(20% - 8px);
+    max-width: 200px;
 }
 
 /* Стили для Sortable */
@@ -137,13 +174,17 @@
 
 .sortable-drag {
     opacity: 0.9;
+    transform: rotate(3deg);
 }
 
-.empty-slot-message {
-    color: #6c757d;
-    font-size: 11px;
-    text-align: center;
-    margin-top: 20px;
+/* Заголовок секции */
+.section-title {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 </style>
 {% endblock %}
@@ -165,80 +206,92 @@
 </div>
 
 <div class="planner-container">
-    <div class="planner-grid" id="planner-grid">
-        {% for day in days %}
-        <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
-             data-date="{{ day.date|date:'Y-m-d' }}">
-            
-            <div class="planner-header">
-                <h5>{{ day.date|date:"l" }}</h5>
-                <small>{{ day.date|date:"d.m.Y" }}</small>
-                {% if not day.is_work_day %}
-                <br><span class="badge bg-secondary mt-1">Выходной</span>
-                {% endif %}
+    <div class="planner-wrapper">
+        <!-- Колонка с временами -->
+        <div class="time-column">
+            <div class="planner-header" style="border-right: none; visibility: hidden;">
+                <h5>Время</h5>
             </div>
-            
-            <div class="hour-slots">
-                {% for hour in hours %}
-                <div class="hour-slot {% if not day.orders %}empty{% endif %}" 
-                     data-hour="{{ hour }}" 
-                     data-date="{{ day.date|date:'Y-m-d' }}">
-                    
-                    <span class="hour-label">{{ hour }}:00</span>
-                    
-                    <div class="orders-container">
-                        {% for order in day.orders %}
-                        {% if order.planned_start_time and order.planned_start_time.hour == hour %}
-                        <div class="order-card" 
-                             data-order-id="{{ order.id }}"
-                             style="background-color: {{ order.color }};">
-                            
-                            <h6>{{ order.title|truncatechars:20 }}</h6>
-                            <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
-                            <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
-                            
-                            {% if order.status %}
-                            <span class="badge status-badge bg-light text-dark">
-                                {{ order.status.name }}
-                            </span>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                    
-                    {% if not day.orders %}
-                    <div class="empty-slot-message">
-                        Нет заказов
-                    </div>
+            {% for hour in hours %}
+            <div class="time-slot">
+                {{ hour }}:00
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Основная сетка планера -->
+        <div class="planner-grid" id="planner-grid">
+            {% for day in days %}
+            <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
+                 data-date="{{ day.date|date:'Y-m-d' }}">
+                
+                <div class="planner-header">
+                    <h5>{{ day.date|date:"D" }}</h5>
+                    <small>{{ day.date|date:"d.m" }}</small>
+                    {% if not day.is_work_day %}
+                    <span class="badge bg-secondary" style="font-size: 8px; padding: 1px 3px;">Вых</span>
                     {% endif %}
                 </div>
-                {% endfor %}
+                
+                <div class="hour-slots">
+                    {% for hour in hours %}
+                    <div class="hour-slot {% if not day.orders %}empty{% endif %}" 
+                         data-hour="{{ hour }}" 
+                         data-date="{{ day.date|date:'Y-m-d' }}">
+                        
+                        <div class="orders-container">
+                            {% for order in day.orders %}
+                            {% if order.planned_start_time and order.planned_start_time.hour == hour %}
+                            <div class="order-card" 
+                                 data-order-id="{{ order.id }}"
+                                 style="background-color: {{ order.color }};">
+                                
+                                <h6>{{ order.title|truncatechars:15 }}</h6>
+                                <div class="order-info">
+                                    <span><i class="fas fa-user"></i> {{ order.customer.first_name|first }}.</span>
+                                    <span><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</span>
+                                </div>
+                                
+                                {% if order.status %}
+                                <span class="badge status-badge bg-light text-dark">
+                                    {{ order.status.name|truncatechars:10 }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 </div>
 
 <div class="unplanned-section">
-    <h4><i class="fas fa-inbox"></i> Заказы без даты</h4>
+    <h4 class="section-title"><i class="fas fa-inbox"></i> Заказы без даты</h4>
     
     <div class="unplanned-grid" id="unplanned-orders">
         {% for order in orders_without_date %}
-        <div class="order-card" 
-             data-order-id="{{ order.id }}"
-             style="background-color: {{ order.color }};">
-            
-            <h6>{{ order.title|truncatechars:20 }}</h6>
-            <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
-            <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
-            <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
-            
-            {% if order.status %}
-            <span class="badge status-badge bg-light text-dark">
-                {{ order.status.name }}
-            </span>
-            {% endif %}
+        <div class="unplanned-order">
+            <div class="order-card" 
+                 data-order-id="{{ order.id }}"
+                 style="background-color: {{ order.color }};">
+                
+                <h6>{{ order.title|truncatechars:15 }}</h6>
+                <div class="order-info">
+                    <span><i class="fas fa-user"></i> {{ order.customer.first_name|first }}.</span>
+                    <span><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</span>
+                </div>
+                
+                {% if order.status %}
+                <span class="badge status-badge bg-light text-dark">
+                    {{ order.status.name|truncatechars:10 }}
+                </span>
+                {% endif %}
+            </div>
         </div>
         {% empty %}
         <p class="text-muted">Нет заказов без даты</p>
@@ -342,13 +395,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Ошибка сети: ' + error);
             window.location.reload();
         });
-    }
-    
-    // Принудительно применяем горизонтальное расположение
-    const plannerGrid = document.getElementById('planner-grid');
-    if (plannerGrid) {
-        plannerGrid.style.display = 'flex';
-        plannerGrid.style.flexDirection = 'row';
     }
     
     console.log('Планировщик инициализирован');
