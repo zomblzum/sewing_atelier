@@ -13,11 +13,11 @@ def index(request):
     if not planner_settings:
         planner_settings = PlannerSettings.objects.create()
     
-    # Генерируем часы для отображения
-    hours = list(range(planner_settings.hours_per_day))
+    # Генерируем часы для отображения (8:00 до 17:00)
+    hours = list(range(8, 17))
     
     # Получаем заказы с планируемыми датами
-    orders = Order.objects.filter(planned_date__isnull=False)
+    orders = Order.objects.filter(planned_date__isnull=False).select_related('customer', 'status')
     
     # Генерируем дни для отображения (текущая неделя)
     today = timezone.now().date()
@@ -39,7 +39,7 @@ def index(request):
         'days': days_of_week,
         'hours': hours,
         'planner_settings': planner_settings,
-        'orders_without_date': Order.objects.filter(planned_date__isnull=True)
+        'orders_without_date': Order.objects.filter(planned_date__isnull=True).select_related('customer', 'status')
     }
     return render(request, 'atelier/index.html', context)
 
