@@ -11,146 +11,153 @@
     width: 100%;
     overflow-x: auto;
     margin: 20px 0;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
 }
 
 .planner-grid {
     display: grid;
-    grid-template-columns: 70px repeat({{ days|length }}, 1fr);
-    gap: 15px;
+    grid-template-columns: 60px repeat({{ days|length }}, minmax(150px, 1fr));
     min-width: max-content;
 }
 
-.time-column {
-    grid-column: 1;
-    display: grid;
-    grid-template-rows: 70px repeat({{ hours|length }}, 1fr);
-    margin-top: 0;
+.grid-header {
+    background: white;
+    padding: 15px 10px;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 60px;
 }
 
 .time-header {
-    height: 70px;
-    box-sizing: border-box;
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+    font-weight: bold;
 }
 
-.time-slot {
-    height: 90px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-end;
-    padding: 12px 8px;
+.day-header {
+    grid-column: {{ forloop.counter0|add:2 }} / span 1;
+    grid-row: 1 / 2;
+}
+
+.day-header.weekend {
+    background: #e9ecef;
+}
+
+.day-header h5 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.day-header small {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.time-cell {
+    padding: 5px;
+    text-align: center;
     font-size: 12px;
     color: #6c757d;
-    font-weight: bold;
+    border-right: 1px solid #dee2e6;
     border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
 }
 
-.days-container {
-    grid-column: 2 / span {{ days|length }};
-    display: grid;
-    grid-template-columns: repeat({{ days|length }}, 1fr);
-    gap: 15px;
-}
-
-.planner-column {
-    background: #f8f9fa;
-    border-radius: 10px;
-    min-height: 700px;
-    display: grid;
-    grid-template-rows: 70px repeat({{ hours|length }}, 1fr);
-}
-
-.planner-column.weekend {
-    background: #e9ecef;
-    opacity: 0.9;
-}
-
-.planner-header {
-    text-align: center;
-    padding: 12px;
+.hour-cell {
+    height: 60px;
     background: white;
-    border-radius: 8px 8px 0 0;
-    border: 1px solid #dee2e6;
-    height: 70px;
-    box-sizing: border-box;
-    grid-row: 1;
-}
-
-.hour-slots {
-    grid-row: 2 / span {{ hours|length }};
-    display: grid;
-    grid-template-rows: repeat({{ hours|length }}, 90px);
-}
-
-.hour-slot {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-top: none;
+    border-bottom: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
     position: relative;
+    padding: 2px;
 }
 
-.hour-slot.empty {
+.hour-cell.weekend {
+    background: #f8f9fa;
+}
+
+.hour-cell.empty {
     background-color: #f8f9fa;
-    border: 1px dashed #dee2e6;
-}
-
-.orders-container {
-    min-height: 88px;
-    padding: 5px;
-    height: 100%;
 }
 
 .order-card {
-    border-radius: 6px;
-    padding: 10px;
-    margin: 5px 0;
+    border-radius: 4px;
+    padding: 4px;
     color: white;
-    font-size: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    font-size: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     cursor: grab;
     border: none;
-    transition: all 0.2s ease;
+    height: 54px;
+    overflow: hidden;
 }
 
 .order-card:active {
     cursor: grabbing;
-    transform: rotate(2deg);
-}
-
-.order-card:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transform: rotate(1deg);
 }
 
 .order-card h6 {
-    margin: 0 0 4px 0;
-    font-size: 12px;
+    margin: 0 0 2px 0;
+    font-size: 10px;
     font-weight: bold;
-    line-height: 1.2;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .order-card p {
-    margin: 2px 0;
-    font-size: 11px;
-    line-height: 1.1;
+    margin: 1px 0;
+    font-size: 9px;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.order-card .order-info {
+    display: flex;
+    justify-content: space-between;
+}
+
+.order-card .order-info span {
+    flex: 1;
 }
 
 .status-badge {
-    font-size: 10px;
-    padding: 2px 5px;
+    font-size: 8px;
+    padding: 1px 3px;
+    margin-top: 2px;
+    display: inline-block;
 }
 
 .unplanned-section {
     background: #f8f9fa;
-    padding: 20px;
-    border-radius: 10px;
-    margin-top: 30px;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 20px;
 }
 
 .unplanned-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
-    margin-top: 15px;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.unplanned-order {
+    flex: 0 0 calc(20% - 8px);
+    max-width: 200px;
 }
 
 /* Стили для Sortable */
@@ -164,13 +171,24 @@
 
 .sortable-drag {
     opacity: 0.9;
+    transform: rotate(3deg);
 }
 
-.empty-slot-message {
-    color: #6c757d;
-    font-size: 11px;
-    text-align: center;
-    margin-top: 35px;
+/* Заголовок секции */
+.section-title {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Бейдж для выходных */
+.weekend-badge {
+    font-size: 8px;
+    padding: 1px 3px;
+    margin-top: 2px;
 }
 </style>
 {% endblock %}
@@ -193,88 +211,79 @@
 
 <div class="planner-container">
     <div class="planner-grid">
-        <!-- Колонка с временем -->
-        <div class="time-column">
-            <div class="time-header"></div> <!-- Пустой элемент для выравнивания с заголовками -->
-            {% for hour in hours %}
-            <div class="time-slot">{{ hour }}:00</div>
-            {% endfor %}
+        <!-- Заголовок времени -->
+        <div class="grid-header time-header">
+            Время
         </div>
         
-        <!-- Колонки дней -->
-        <div class="days-container">
-            {% for day in days %}
-            <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
-                 data-date="{{ day.date|date:'Y-m-d' }}">
-                
-                <div class="planner-header">
-                    <h5>{{ day.date|date:"l" }}</h5>
-                    <small>{{ day.date|date:"d.m.Y" }}</small>
-                    {% if not day.is_work_day %}
-                    <br><span class="badge bg-secondary mt-1">Выходной</span>
+        <!-- Заголовки дней -->
+        {% for day in days %}
+        <div class="grid-header day-header {% if not day.is_work_day %}weekend{% endif %}" 
+             data-date="{{ day.date|date:'Y-m-d' }}">
+            <h5>{{ day.date|date:"D" }}</h5>
+            <small>{{ day.date|date:"d.m" }}</small>
+            {% if not day.is_work_day %}
+            <span class="badge bg-secondary weekend-badge">Вых</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+        
+        <!-- Ячейки заказов для каждого дня -->
+        {% for day in days %}
+        <div class="hour-cell {% if not day.is_work_day %}weekend{% endif %} {% if not day.orders %}empty{% endif %}" 
+             data-hour="{{ hour }}" 
+             data-date="{{ day.date|date:'Y-m-d' }}">
+            
+            <div class="orders-container">
+                {% for order in day.orders %}
+                {% if order.planned_start_time and order.planned_start_time.hour == hour %}
+                <div class="order-card" 
+                     data-order-id="{{ order.id }}"
+                     style="background-color: {{ order.color }};">
+                    
+                    <h6>{{ order.title|truncatechars:15 }}</h6>
+                    <div class="order-info">
+                        <span><i class="fas fa-user"></i> {{ order.customer.first_name|first }}.</span>
+                        <span><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</span>
+                    </div>
+                    
+                    {% if order.status %}
+                    <span class="badge status-badge bg-light text-dark">
+                        {{ order.status.name|truncatechars:10 }}
+                    </span>
                     {% endif %}
                 </div>
-                
-                <div class="hour-slots">
-                    {% for hour in hours %}
-                    <div class="hour-slot" 
-                         data-hour="{{ hour }}" 
-                         data-date="{{ day.date|date:'Y-m-d' }}">
-                        
-                        <div class="orders-container">
-                            {% for order in day.orders %}
-                            {% if order.planned_start_time and order.planned_start_time.hour == hour %}
-                            <div class="order-card" 
-                                 data-order-id="{{ order.id }}"
-                                 style="background-color: {{ order.color }};">
-                                
-                                <h6>{{ order.title|truncatechars:20 }}</h6>
-                                <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
-                                <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
-                                
-                                {% if order.status %}
-                                <span class="badge status-badge bg-light text-dark">
-                                    {{ order.status.name }}
-                                </span>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-                            {% endfor %}
-                            
-                            {% if not day.orders %}
-                            <div class="empty-slot-message">
-                                Нет заказов
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
+                {% endif %}
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
+        {% endfor %}
     </div>
 </div>
 
 <div class="unplanned-section">
-    <h4><i class="fas fa-inbox"></i> Заказы без даты</h4>
+    <h4 class="section-title"><i class="fas fa-inbox"></i> Заказы без даты</h4>
     
     <div class="unplanned-grid" id="unplanned-orders">
         {% for order in orders_without_date %}
-        <div class="order-card" 
-             data-order-id="{{ order.id }}"
-             style="background-color: {{ order.color }};">
-            
-            <h6>{{ order.title|truncatechars:20 }}</h6>
-            <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
-            <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
-            <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
-            
-            {% if order.status %}
-            <span class="badge status-badge bg-light text-dark">
-                {{ order.status.name }}
-            </span>
-            {% endif %}
+        <div class="unplanned-order">
+            <div class="order-card" 
+                 data-order-id="{{ order.id }}"
+                 style="background-color: {{ order.color }};">
+                
+                <h6>{{ order.title|truncatechars:15 }}</h6>
+                <div class="order-info">
+                    <span><i class="fas fa-user"></i> {{ order.customer.first_name|first }}.</span>
+                    <span><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</span>
+                </div>
+                
+                {% if order.status %}
+                <span class="badge status-badge bg-light text-dark">
+                    {{ order.status.name|truncatechars:10 }}
+                </span>
+                {% endif %}
+            </div>
         </div>
         {% empty %}
         <p class="text-muted">Нет заказов без даты</p>
@@ -284,6 +293,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Инициализация планера...');
@@ -330,7 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 dragClass: 'sortable-drag',
                 onAdd: function(evt) {
                     const orderId = evt.item.dataset.orderId;
-                    const slotElement = evt.to.closest('.hour-slot');
+                    const slotElement = evt.to.closest('.hour-cell');
                     if (slotElement) {
                         const date = slotElement.dataset.date;
                         const hour = slotElement.dataset.hour;
