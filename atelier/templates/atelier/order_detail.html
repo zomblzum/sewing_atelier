@@ -3,34 +3,108 @@
 {% block title %}Заказ #{{ order.id }}{% endblock %}
 
 {% block content %}
-<h1>Заказ: {{ order.title }}</h1>
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <h1>Заказ: {{ order.title }}</h1>
+        
+        <div class="card mb-4">
+            <div class="card-header">Информация о заказе</div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Клиент:</strong><br>
+                        <a href="{% url 'customer_detail' pk=order.customer.pk %}">
+                            {{ order.customer.last_name }} {{ order.customer.first_name }}
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Телефон:</strong><br>
+                        {{ order.customer.phone }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Статус:</strong><br>
+                        <span class="badge" style="background-color: {{ order.status.color }}; color: white;">
+                            {{ order.status.name }}
+                        </span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Цена:</strong><br>
+                        {{ order.price }} руб.
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Планируемое время:</strong><br>
+                        {{ order.planned_minutes }} минут
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Планируемая дата:</strong><br>
+                        {% if order.planned_date %}
+                            {{ order.planned_date|date:"d.m.Y" }}
+                        {% else %}
+                            <span class="text-muted">Не назначена</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <strong>Комментарий:</strong><br>
+                        {{ order.comment|default:"-" }}
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                <small>Создан: {{ order.created_at|date:"d.m.Y H:i" }} | Обновлен: {{ order.updated_at|date:"d.m.Y H:i" }}</small>
+            </div>
+        </div>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Информация о заказе</h5>
-        <p class="card-text">
-            <strong>Клиент:</strong> 
-            <a href="{% url 'customer_detail' pk=order.customer.pk %}">
-                {{ order.customer.last_name }} {{ order.customer.first_name }}
-            </a><br>
-            <strong>Статус:</strong> {{ order.get_status_display }}<br>
-            <strong>Цена:</strong> {{ order.price }} руб.<br>
-            <strong>Дата создания:</strong> {{ order.created_at|date:"d.m.Y H:i" }}<br>
-            <strong>Дата обновления:</strong> {{ order.updated_at|date:"d.m.Y H:i" }}<br>
-            <strong>Комментарий:</strong> {{ order.comment|default:"-" }}
-        </p>
+        <div class="d-flex gap-3">
+            <a href="{% url 'order_edit' pk=order.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Редактировать
+            </a>
+            
+            <form method="post" action="{% url 'order_delete' pk=order.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('Вы уверены, что хотите удалить этот заказ?')">
+                    <i class="fas fa-trash"></i> Удалить заказ
+                </button>
+            </form>
+            
+            <a href="{% url 'order_list' %}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> Назад к списку
+            </a>
+            
+            {% if not order.planned_date %}
+            <a href="{% url 'index' %}" class="btn btn-info">
+                <i class="fas fa-calendar"></i> Запланировать
+            </a>
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<div class="d-flex gap-3">
-    <a href="{% url 'order_edit' pk=order.pk %}" class="btn btn-warning">Редактировать</a>
-    <form method="post" action="{% url 'order_delete' pk=order.pk %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger"
-                onclick="return confirm('Вы уверены, что хотите удалить этот заказ?')">
-            Удалить заказ
-        </button>
-    </form>
-    <a href="{% url 'order_list' %}" class="btn btn-secondary">Назад к списку</a>
-</div>
+<style>
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+    }
+</style>
 {% endblock %}
