@@ -6,7 +6,7 @@ from atelier import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.index, name='index'),  # Главная страница
+    path('', include('atelier.urls')),  # Важно!
     path('customers/', views.customer_list, name='customer_list'),
     path('customers/new/', views.customer_create, name='customer_create'),
     path('orders/', views.order_list, name='order_list'),
