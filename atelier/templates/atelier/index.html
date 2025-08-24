@@ -163,21 +163,6 @@
     max-width: 200px;
 }
 
-/* Стили для Sortable */
-.sortable-ghost {
-    opacity: 0.4;
-}
-
-.sortable-chosen {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-.sortable-drag {
-    opacity: 0.9;
-    transform: rotate(3deg);
-}
-
-/* Заголовок секции */
 .section-title {
     font-size: 18px;
     margin-bottom: 15px;
@@ -352,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const date = slotElement.dataset.date;
                         const hour = slotElement.dataset.hour;
                         
-                        console.log('Заказ перемещен:', orderId, 'на', date, hour + ':00');
+                        console.log('Заказ перемещён:', orderId, 'на', date, hour + ':00');
                         updateOrderPlanning(orderId, date, hour);
                     }
                 }
@@ -379,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Заказ успешно обновлен');
+                console.log('Заказ успешно обновлён');
                 // Плавное обновление страницы через 0.5 секунды
                 setTimeout(() => {
                     window.location.reload();
