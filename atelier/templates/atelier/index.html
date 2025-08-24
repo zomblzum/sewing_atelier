@@ -178,21 +178,19 @@
 </div>
 
 <div class="planner-container">
-    <div class="planner-wrapper">
-        <!-- Колонка с временами -->
-        <div class="time-column">
-            <div class="planner-header" style="border-right: none; visibility: hidden;">
-                <h5>Время</h5>
-            </div>
-            {% for hour in hours %}
-            <div class="time-slot">
-                {{ hour }}:00
-            </div>
-            {% endfor %}
-        </div>
-        
+    <div class="planner-wrapper">    
         <!-- Основная сетка планера -->
         <div class="planner-grid" id="planner-grid">
+            <div class="time-column">
+                <div class="planner-header" style="border-right: none; visibility: hidden;">
+                    <h5>Время</h5>
+                </div>
+                {% for hour in hours %}
+                <div class="time-slot">
+                    {{ hour }}:00
+                </div>
+                {% endfor %}
+            </div>            
             {% for day in days %}
             <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
                  data-date="{{ day.date|date:'Y-m-d' }}">
