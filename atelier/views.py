@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.utils import timezone
-from django.views.decorators.http import require_POST  # Добавьте эту строку
+from django.views.decorators.http import require_POST
 from datetime import datetime, timedelta
 import json
 from .models import Customer, Order, OrderStatus, PlannerSettings
@@ -13,8 +13,8 @@ def index(request):
     if not planner_settings:
         planner_settings = PlannerSettings.objects.create()
     
-    # Генерируем часы для отображения (8:00 до 17:00)
-    hours = list(range(8, 17))
+    # Генерируем часы для отображения (10:00 до 18:00)
+    hours = list(range(10, 18))
     
     # Получаем заказы с планируемыми датами
     orders = Order.objects.filter(planned_date__isnull=False).select_related('customer', 'status')
@@ -29,9 +29,19 @@ def index(request):
     for i in range(7):
         day_date = start_of_week + timedelta(days=i)
         day_orders = orders.filter(planned_date=day_date).order_by('planned_start_time')
+        
+        # Создаем структуру для хранения заказов по часам
+        hour_orders = {hour: [] for hour in hours}
+        for order in day_orders:
+            if order.planned_start_time:
+                hour = order.planned_start_time.hour
+                if hour in hour_orders:
+                    hour_orders[hour].append(order)
+        
         days_of_week.append({
             'date': day_date,
             'orders': day_orders,
+            'hour_orders': hour_orders,  # Добавляем заказы сгруппированные по часам
             'is_work_day': (day_date.weekday() + 1) in work_days
         })
     
