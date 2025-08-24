@@ -13,8 +13,8 @@ def index(request):
     if not planner_settings:
         planner_settings = PlannerSettings.objects.create()
     
-    # Генерируем часы для отображения (10:00 до 18:00)
-    hours = list(range(10, 18))
+    # Генерируем часы для отображения (10:00 до 17:00)
+    hours = list(range(10, 17))
     
     # Получаем заказы с планируемыми датами
     orders = Order.objects.filter(planned_date__isnull=False).select_related('customer', 'status')
@@ -31,7 +31,10 @@ def index(request):
         day_orders = orders.filter(planned_date=day_date).order_by('planned_start_time')
         
         # Создаем структуру для хранения заказов по часам
-        hour_orders = {hour: [] for hour in hours}
+        hour_orders = {}
+        for hour in hours:
+            hour_orders[hour] = []
+        
         for order in day_orders:
             if order.planned_start_time:
                 hour = order.planned_start_time.hour

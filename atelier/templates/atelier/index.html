@@ -32,7 +32,7 @@
     <div class="planner-grid" id="planner-grid">
         {% for day in days %}
         <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
-             data-date="{{ day.date|date:'Y-m-d' }}">
+            data-date="{{ day.date|date:'Y-m-d' }}">
             
             <div class="planner-header">
                 <h5>{{ day.date|date:"l" }}</h5>
@@ -46,19 +46,18 @@
                 {% for hour in hours %}
                 {% with hour_orders=day.hour_orders|get_item:hour %}
                 <div class="hour-slot {% if not hour_orders %}empty{% endif %}" 
-                     data-hour="{{ hour }}" 
-                     data-date="{{ day.date|date:'Y-m-d' }}"
-                     id="slot-{{ day.date|date:'Y-m-d' }}-{{ hour }}">
+                    data-hour="{{ hour }}" 
+                    data-date="{{ day.date|date:'Y-m-d' }}"
+                    id="slot-{{ day.date|date:'Y-m-d' }}-{{ hour }}">
                     
                     <span class="hour-label">{{ hour }}:00</span>
                     
                     <div class="orders-container">
                         {% for order in hour_orders %}
-                        {% if forloop.first %} {# Показываем только первый заказ в слоте #}
-                        <div class="order-card multi-hour-task" 
-                             data-order-id="{{ order.id }}"
-                             data-duration="{{ order.planned_hours }}"
-                             style="background-color: {{ order.color }}; height: calc(70px * {{ order.planned_hours }} - 10px);">
+                        <div class="order-card" 
+                            data-order-id="{{ order.id }}"
+                            data-duration="{{ order.planned_hours }}"
+                            style="background-color: {{ order.color }};">
                             
                             <h6>{{ order.title|truncatechars:25 }}</h6>
                             <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
@@ -72,7 +71,6 @@
                                 {% endif %}
                             </div>
                         </div>
-                        {% endif %}
                         {% endfor %}
                     </div>
                     
@@ -86,7 +84,7 @@
                 {% endfor %}
             </div>
         </div>
-        {% endfor %}
+{% endfor %}
     </div>
 </div>
 
