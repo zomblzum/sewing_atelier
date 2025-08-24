@@ -6,15 +6,16 @@
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
-/* Основные стили планера - обновленные */
+/* Основные стили планера - ОБНОВЛЕННЫЕ */
 .planner-container {
     width: 100%;
     overflow-x: auto;
     margin: 20px 0;
-    border: 1px solid #ddd !important;
+    border: 2px solid #d1d1d1 !important;
     border-radius: 8px;
     background-color: #fff;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    min-width: 1200px;
 }
 
 .planner-grid {
@@ -25,10 +26,10 @@
 }
 
 .planner-column {
-    flex: 0 0 500px; /* Увеличил ширину колонок */
+    flex: 0 0 320px !important; /* Еще больше увеличил ширину колонок */
     background: #f8f9fa;
     min-height: 700px;
-    border-right: 1px solid #dee2e6 !important; /* Граница между колонками */
+    border-right: 2px solid #d1d1d1 !important; /* Более заметная граница между колонками */
 }
 
 .planner-column:last-child {
@@ -45,7 +46,8 @@
     margin-bottom: 0;
     padding: 12px;
     background: white;
-    border-bottom: 1px solid #dee2e6 !important; /* Граница под заголовком */
+    border-bottom: 2px solid #d1d1d1 !important; /* Более заметная граница под заголовком */
+    font-weight: bold;
 }
 
 .hour-slots {
@@ -55,9 +57,10 @@
 
 .hour-slot {
     background: white;
-    border-bottom: 1px solid #dee2e6 !important; /* Граница между ячейками */
+    border-bottom: 1px solid #d1d1d1 !important; /* Граница между ячейками */
     padding: 12px;
     min-height: 90px;
+    height: 90px !important; /* ФИКСИРОВАННАЯ высота */
     position: relative;
     display: flex;
     flex-direction: column;
@@ -65,10 +68,8 @@
     overflow: hidden;
 }
 
-/* Более специфичный селектор для пустых ячеек */
-div.hour-slot.empty {
+.hour-slot.empty {
     background-color: #f0f0f0 !important; /* Светло-серый для пустых ячеек */
-    border: 1px dashed #ccc !important;
 }
 
 .hour-label {
@@ -78,6 +79,7 @@ div.hour-slot.empty {
     font-size: 11px;
     color: #6c757d;
     font-weight: bold;
+    z-index: 2;
 }
 
 .order-card {
@@ -92,6 +94,10 @@ div.hour-slot.empty {
     transition: all 0.2s ease;
     width: 100%;
     box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+    max-height: 70px;
+    overflow: hidden;
 }
 
 .order-card:active {
@@ -109,12 +115,18 @@ div.hour-slot.empty {
     font-size: 12px;
     font-weight: bold;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .order-card p {
     margin: 2px 0;
     font-size: 11px;
     line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .status-badge {
@@ -127,7 +139,7 @@ div.hour-slot.empty {
     padding: 20px;
     border-radius: 10px;
     margin-top: 30px;
-    border: 1px solid #ddd;
+    border: 2px solid #d1d1d1;
 }
 
 .unplanned-grid {
@@ -161,6 +173,8 @@ div.hour-slot.empty {
 .orders-container {
     min-height: 60px;
     margin-top: 20px;
+    position: relative;
+    z-index: 1;
 }
 
 .planner-column h5 {
@@ -170,6 +184,22 @@ div.hour-slot.empty {
 
 .planner-column small {
     font-size: 12px;
+}
+
+/* Стили для многочасовых задач */
+.multi-hour-task {
+    position: absolute;
+    z-index: 2;
+    width: 95%;
+    left: 2.5%;
+}
+
+/* Принудительное применение стилей */
+body .planner-container,
+body .planner-column,
+body .hour-slot,
+body .planner-header {
+    box-sizing: border-box !important;
 }
 </style>
 {% endblock %}
@@ -217,7 +247,8 @@ div.hour-slot.empty {
                         {% if order.planned_start_time and order.planned_start_time.hour == hour %}
                         <div class="order-card" 
                              data-order-id="{{ order.id }}"
-                             style="background-color: {{ order.color }};">
+                             style="background-color: {{ order.color }};
+                                    {% if order.planned_hours > 1 %}height: {{ order.planned_hours|multiply:90 }}px;{% endif %}">
                             
                             <h6>{{ order.title|truncatechars:20 }}</h6>
                             <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
