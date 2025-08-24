@@ -173,6 +173,38 @@
     border: 2px dashed #d9534f;
     border-radius: 6px;
 }
+
+.order-link {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: white;
+    opacity: 0.6;
+    font-size: 10px;
+    padding: 3px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.3);
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+.order-link:hover {
+    opacity: 1;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.order-brick {
+    position: relative; /* Добавляем для позиционирования ссылки */
+    /* ... остальные стили ... */
+}
+
+/* Улучшаем взаимодействие с ссылкой при перетаскивании */
+.sortable-drag .order-link,
+.sortable-ghost .order-link {
+    display: none;
+}
+
 </style>
 {% endblock %}
 
@@ -216,9 +248,14 @@
                  data-date="{{ day.date|date:'Y-m-d' }}">
                 {% for order in day.orders %}
                 <div class="order-brick" 
-                     data-order-id="{{ order.id }}"
-                     data-minutes="{{ order.planned_minutes }}"
-                     style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:300 }}px;">
+                    data-order-id="{{ order.id }}"
+                    data-minutes="{{ order.planned_minutes }}"
+                    style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:300 }}px;">
+                    
+                    <!-- Ссылка на карточку заказа -->
+                    <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
                     
                     <h6>{{ order.title|truncatechars:20 }}</h6>
                     <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
@@ -253,9 +290,14 @@
     <div class="unplanned-grid" id="unplanned-orders">
         {% for order in orders_without_date %}
         <div class="order-brick" 
-             data-order-id="{{ order.id }}"
-             data-minutes="{{ order.planned_minutes }}"
-             style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:100 }}px;">
+            data-order-id="{{ order.id }}"
+            data-minutes="{{ order.planned_minutes }}"
+            style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:100 }}px;">
+            
+            <!-- Ссылка на карточку заказа -->
+            <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
+                <i class="fas fa-external-link-alt"></i>
+            </a>
             
             <h6>{{ order.title|truncatechars:20 }}</h6>
             <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>

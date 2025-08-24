@@ -54,7 +54,11 @@ class OrderForm(forms.ModelForm):
             'price': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_price'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'status': forms.Select(attrs={'class': 'form-control'}),
-            'planned_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'planned_date': forms.DateInput(attrs={
+                'class': 'form-control', 
+                'type': 'date',
+                'id': 'id_planned_date'
+            }),
             'planned_minutes': forms.NumberInput(attrs={
                 'class': 'form-control', 
                 'min': 1,
@@ -66,6 +70,8 @@ class OrderForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Устанавливаем подсказку для поля planned_minutes
         self.fields['planned_minutes'].help_text = 'Продолжительность заказа в минутах'
+        if self.instance and self.instance.pk:
+            print(f"Editing order {self.instance.pk}, planned_date: {self.instance.planned_date}")        
 
 class OrderStatusForm(forms.ModelForm):
     class Meta:
