@@ -8,16 +8,12 @@ from .models import Customer, Order, OrderStatus, PlannerSettings
 from .forms import CustomerForm, OrderForm, OrderStatusForm, PlannerSettingsForm
 
 def index(request):
-    # Получаем настройки планера
     planner_settings = PlannerSettings.objects.first()
     if not planner_settings:
         planner_settings = PlannerSettings.objects.create()
     
-    # Генерируем часы для отображения
-    hours = list(range(planner_settings.hours_per_day))
-    
-    # Получаем заказы с планируемыми датами
-    orders = Order.objects.filter(planned_date__isnull=False)
+    # Получаем заказы с планируемыми датами и сортируем по порядку в дне
+    orders = Order.objects.filter(planned_date__isnull=False).order_by('planned_date', 'order_in_day')
     
     # Генерируем дни для отображения (текущая неделя)
     today = timezone.now().date()
@@ -28,35 +24,44 @@ def index(request):
     
     for i in range(7):
         day_date = start_of_week + timedelta(days=i)
-        day_orders = orders.filter(planned_date=day_date).order_by('planned_start_time')
+        day_orders = orders.filter(planned_date=day_date)
+        
+        # Рассчитываем общую занятость дня в минутах
+        total_minutes = sum(order.planned_minutes for order in day_orders)
+        day_percentage = (total_minutes / (planner_settings.hours_per_day * 60)) * 100
+        
         days_of_week.append({
             'date': day_date,
             'orders': day_orders,
-            'is_work_day': (day_date.weekday() + 1) in work_days
+            'is_work_day': (day_date.weekday() + 1) in work_days,
+            'total_minutes': total_minutes,
+            'day_percentage': min(day_percentage, 100)  # не более 100%
         })
     
     context = {
         'days': days_of_week,
-        'hours': hours,
         'planner_settings': planner_settings,
-        'orders_without_date': Order.objects.filter(planned_date__isnull=True)
+        'orders_without_date': Order.objects.filter(planned_date__isnull=True),
+        'total_day_minutes': planner_settings.hours_per_day * 60  # общее количество минут в рабочем дне
     }
     return render(request, 'atelier/index.html', context)
 
+@require_POST
 def update_order_planning(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             order_id = data.get('order_id')
             planned_date = data.get('planned_date')
-            planned_start_time = data.get('planned_start_time')
+            order_in_day = data.get('order_in_day')  # новый параметр для порядка
             
             order = Order.objects.get(id=order_id)
             
             if planned_date:
                 order.planned_date = planned_date
-            if planned_start_time:
-                order.planned_start_time = planned_start_time
+            
+            if order_in_day is not None:
+                order.order_in_day = order_in_day
             
             order.save()
             

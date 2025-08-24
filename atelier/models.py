@@ -59,11 +59,11 @@ class Order(models.Model):
         verbose_name="Статус"
     )
     planned_date = models.DateField(null=True, blank=True, verbose_name="Планируемая дата")
-    planned_hours = models.PositiveIntegerField(default=1, verbose_name="Планируемые часы")
-    planned_start_time = models.TimeField(null=True, blank=True, verbose_name="Время начала")
     color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет в планере")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+    planned_minutes = models.PositiveIntegerField(default=60, verbose_name="Планируемые минуты")
+    order_in_day = models.PositiveIntegerField(null=True, blank=True, verbose_name="Порядок в дне")    
 
     class Meta:
         verbose_name = "Заказ"
@@ -75,13 +75,11 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.status:
-            # Устанавливаем статус по умолчанию
             default_status = OrderStatus.objects.filter(is_default=True).first()
             if default_status:
                 self.status = default_status
         
         if not self.color or self.color == '#007bff':
-            # Генерируем случайный цвет
             colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#F9A826', '#6A0572', 
                      '#AB83A1', '#5C80BC', '#4CB944', '#E2B1B1', '#7D70BA']
             self.color = random.choice(colors)

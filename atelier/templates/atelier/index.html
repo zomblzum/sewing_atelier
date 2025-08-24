@@ -1,21 +1,21 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load math_filters %}
 
 {% block title %}Планировщик заказов{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
-/* Основные стили планера - ОБНОВЛЕННЫЕ */
+/* Обновленные стили для новой системы */
 .planner-container {
     width: 100%;
     overflow-x: auto;
     margin: 20px 0;
-    border: 2px solid #d1d1d1 !important;
+    border: 1px solid #ddd;
     border-radius: 8px;
     background-color: #fff;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    min-width: 1200px;
 }
 
 .planner-grid {
@@ -23,17 +23,22 @@
     flex-direction: row;
     min-width: max-content;
     width: 100%;
+    padding: 10px;
 }
 
 .planner-column {
-    flex: 0 0 320px !important; /* Еще больше увеличил ширину колонок */
+    flex: 1;
+    min-width: 180px;
+    max-width: 200px;
     background: #f8f9fa;
-    min-height: 700px;
-    border-right: 2px solid #d1d1d1 !important; /* Более заметная граница между колонками */
+    min-height: 400px;
+    border-right: 1px solid #dee2e6;
+    padding: 10px;
+    position: relative;
 }
 
 .planner-column:last-child {
-    border-right: none !important;
+    border-right: none;
 }
 
 .planner-column.weekend {
@@ -43,49 +48,32 @@
 
 .planner-header {
     text-align: center;
-    margin-bottom: 0;
+    margin-bottom: 15px;
     padding: 12px;
     background: white;
-    border-bottom: 2px solid #d1d1d1 !important; /* Более заметная граница под заголовком */
-    font-weight: bold;
-}
-
-.hour-slots {
-    display: flex;
-    flex-direction: column;
-}
-
-.hour-slot {
-    background: white;
-    border-bottom: 1px solid #d1d1d1 !important; /* Граница между ячейками */
-    padding: 12px;
-    min-height: 90px;
-    height: 90px !important; /* ФИКСИРОВАННАЯ высота */
+    border-bottom: 1px solid #dee2e6;
     position: relative;
+}
+
+.day-utilization {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background-color: #4CAF50;
+    width: {{ day.day_percentage }}%;
+}
+
+.orders-container {
+    min-height: 300px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    overflow: hidden;
+    gap: 8px;
 }
 
-.hour-slot.empty {
-    background-color: #f0f0f0 !important; /* Светло-серый для пустых ячеек */
-}
-
-.hour-label {
-    position: absolute;
-    top: 5px;
-    left: 8px;
-    font-size: 11px;
-    color: #6c757d;
-    font-weight: bold;
-    z-index: 2;
-}
-
-.order-card {
+.order-brick {
     border-radius: 6px;
     padding: 10px;
-    margin: 5px 0;
     color: white;
     font-size: 12px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
@@ -94,39 +82,29 @@
     transition: all 0.2s ease;
     width: 100%;
     box-sizing: border-box;
-    position: relative;
-    z-index: 1;
-    max-height: 70px;
-    overflow: hidden;
 }
 
-.order-card:active {
+.order-brick:active {
     cursor: grabbing;
     transform: rotate(2deg);
 }
 
-.order-card:hover {
+.order-brick:hover {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.order-card h6 {
+.order-brick h6 {
     margin: 0 0 4px 0;
     font-size: 12px;
     font-weight: bold;
     line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.order-card p {
+.order-brick p {
     margin: 2px 0;
     font-size: 11px;
     line-height: 1.1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .status-badge {
@@ -139,7 +117,7 @@
     padding: 20px;
     border-radius: 10px;
     margin-top: 30px;
-    border: 2px solid #d1d1d1;
+    border: 1px solid #ddd;
 }
 
 .unplanned-grid {
@@ -162,44 +140,20 @@
     opacity: 0.9;
 }
 
-.empty-slot-message {
+.empty-column-message {
     color: #6c757d;
     font-size: 11px;
     text-align: center;
     margin-top: 20px;
 }
 
-/* Новые стили для лучшего отображения */
-.orders-container {
-    min-height: 60px;
-    margin-top: 20px;
-    position: relative;
-    z-index: 1;
-}
-
-.planner-column h5 {
-    margin: 0;
-    font-size: 16px;
-}
-
-.planner-column small {
-    font-size: 12px;
-}
-
-/* Стили для многочасовых задач */
-.multi-hour-task {
-    position: absolute;
-    z-index: 2;
-    width: 95%;
-    left: 2.5%;
-}
-
-/* Принудительное применение стилей */
-body .planner-container,
-body .planner-column,
-body .hour-slot,
-body .planner-header {
-    box-sizing: border-box !important;
+.minutes-badge {
+    font-size: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 2px 6px;
+    margin-top: 4px;
+    display: inline-block;
 }
 </style>
 {% endblock %}
@@ -220,6 +174,10 @@ body .planner-header {
     </div>
 </div>
 
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> Перетягивайте заказы в дни для планирования. Высота заказа соответствует его продолжительности.
+</div>
+
 <div class="planner-container">
     <div class="planner-grid" id="planner-grid">
         {% for day in days %}
@@ -229,46 +187,35 @@ body .planner-header {
             <div class="planner-header">
                 <h5>{{ day.date|date:"l" }}</h5>
                 <small>{{ day.date|date:"d.m.Y" }}</small>
+                <div class="day-utilization"></div>
                 {% if not day.is_work_day %}
                 <br><span class="badge bg-secondary mt-1">Выходной</span>
                 {% endif %}
+                <div class="mt-2">
+                    <small>{{ day.total_minutes }} / {{ total_day_minutes }} мин.</small>
+                </div>
             </div>
             
-            <div class="hour-slots">
-                {% for hour in hours %}
-                <div class="hour-slot {% if not day.orders %}empty{% endif %}" 
-                     data-hour="{{ hour }}" 
-                     data-date="{{ day.date|date:'Y-m-d' }}">
+            <div class="orders-container" id="orders-{{ day.date|date:'Y-m-d' }}">
+                {% for order in day.orders %}
+                <div class="order-brick" 
+                     data-order-id="{{ order.id }}"
+                     data-minutes="{{ order.planned_minutes }}"
+                     style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:300 }}px;">
                     
-                    <span class="hour-label">{{ hour }}:00</span>
+                    <h6>{{ order.title|truncatechars:20 }}</h6>
+                    <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
+                    <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
                     
-                    <div class="orders-container">
-                        {% for order in day.orders %}
-                        {% if order.planned_start_time and order.planned_start_time.hour == hour %}
-                        <div class="order-card" 
-                             data-order-id="{{ order.id }}"
-                             style="background-color: {{ order.color }};
-                                    {% if order.planned_hours > 1 %}height: {{ order.planned_hours|multiply:90 }}px;{% endif %}">
-                            
-                            <h6>{{ order.title|truncatechars:20 }}</h6>
-                            <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
-                            <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
-                            
-                            {% if order.status %}
-                            <span class="badge status-badge bg-light text-dark">
-                                {{ order.status.name }}
-                            </span>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                    
-                    {% if not day.orders %}
-                    <div class="empty-slot-message">
-                        Нет заказов
-                    </div>
+                    {% if order.status %}
+                    <span class="badge status-badge bg-light text-dark">
+                        {{ order.status.name }}
+                    </span>
                     {% endif %}
+                </div>
+                {% empty %}
+                <div class="empty-column-message">
+                    Нет заказов
                 </div>
                 {% endfor %}
             </div>
@@ -282,14 +229,15 @@ body .planner-header {
     
     <div class="unplanned-grid" id="unplanned-orders">
         {% for order in orders_without_date %}
-        <div class="order-card" 
+        <div class="order-brick" 
              data-order-id="{{ order.id }}"
-             style="background-color: {{ order.color }};">
+             data-minutes="{{ order.planned_minutes }}"
+             style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:100 }}px;">
             
             <h6>{{ order.title|truncatechars:20 }}</h6>
             <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
             <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
-            <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
+            <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
             
             {% if order.status %}
             <span class="badge status-badge bg-light text-dark">
@@ -338,10 +286,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 2. Инициализация всех слотов времени
-    const slotContainers = document.querySelectorAll('.orders-container');
+    // 2. Инициализация всех колонок дней
+    const dayColumns = document.querySelectorAll('.orders-container');
     
-    slotContainers.forEach(container => {
+    dayColumns.forEach(container => {
         try {
             new Sortable(container, {
                 group: 'orders',
@@ -351,23 +299,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 dragClass: 'sortable-drag',
                 onAdd: function(evt) {
                     const orderId = evt.item.dataset.orderId;
-                    const slotElement = evt.to.closest('.hour-slot');
-                    if (slotElement) {
-                        const date = slotElement.dataset.date;
-                        const hour = slotElement.dataset.hour;
-                        
-                        console.log('Заказ перемещен:', orderId, 'на', date, hour + ':00');
-                        updateOrderPlanning(orderId, date, hour);
-                    }
+                    const columnElement = evt.to;
+                    const date = columnElement.id.replace('orders-', '');
+                    
+                    // Определяем порядок в колонке
+                    const orderInDay = Array.from(columnElement.children).indexOf(evt.item);
+                    
+                    console.log('Заказ перемещен:', orderId, 'на', date, 'позиция', orderInDay);
+                    updateOrderPlanning(orderId, date, orderInDay);
+                },
+                onUpdate: function(evt) {
+                    // Обновляем порядок при изменении позиции внутри колонки
+                    const columnElement = evt.to;
+                    const date = columnElement.id.replace('orders-', '');
+                    
+                    // Обновляем порядок для всех элементов в колонке
+                    const orders = columnElement.querySelectorAll('.order-brick');
+                    orders.forEach((order, index) => {
+                        const orderId = order.dataset.orderId;
+                        updateOrderPlanning(orderId, date, index);
+                    });
                 }
             });
         } catch (e) {
-            console.error('Ошибка инициализации контейнера:', e);
+            console.error('Ошибка инициализации колонки:', e);
         }
     });
 
     // Функция обновления планирования
-    function updateOrderPlanning(orderId, date, hour) {
+    function updateOrderPlanning(orderId, date, orderInDay) {
         fetch('{% url "update_order_planning" %}', {
             method: 'POST',
             headers: {
@@ -377,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({
                 order_id: orderId,
                 planned_date: date,
-                planned_start_time: hour + ':00'
+                order_in_day: orderInDay
             })
         })
         .then(response => response.json())
@@ -399,13 +359,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Ошибка сети: ' + error);
             window.location.reload();
         });
-    }
-    
-    // Принудительно применяем горизонтальное расположение
-    const plannerGrid = document.getElementById('planner-grid');
-    if (plannerGrid) {
-        plannerGrid.style.display = 'flex';
-        plannerGrid.style.flexDirection = 'row';
     }
     
     console.log('Планировщик инициализирован');

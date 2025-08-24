@@ -16,7 +16,7 @@ class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
         fields = ['title', 'customer', 'price', 'comment', 'status', 
-                 'planned_date', 'planned_hours', 'planned_start_time']
+                 'planned_date', 'planned_minutes']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'customer': forms.Select(attrs={'class': 'form-control'}),
@@ -24,8 +24,7 @@ class OrderForm(forms.ModelForm):
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'status': forms.Select(attrs={'class': 'form-control'}),
             'planned_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'planned_hours': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-            'planned_start_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'planned_minutes': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
         }
 
 class OrderStatusForm(forms.ModelForm):
