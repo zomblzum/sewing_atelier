@@ -86,7 +86,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
     planned_minutes = models.PositiveIntegerField(default=60, verbose_name="Планируемые минуты")
-    order_in_day = models.PositiveIntegerField(null=True, blank=True, verbose_name="Порядок в дне")    
+    order_in_day = models.PositiveIntegerField(null=True, blank=True, verbose_name="Порядок в дне")
 
     class Meta:
         verbose_name = "Заказ"

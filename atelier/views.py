@@ -56,36 +56,19 @@ def update_order_planning(request):
             order_in_day = data.get('order_in_day')
             
             order = Order.objects.get(id=order_id)
-            planner_settings = PlannerSettings.objects.first()
             
-            if not planner_settings:
-                planner_settings = PlannerSettings.objects.create()
-            
-            # Проверяем, не превысит ли добавление заказа лимит дня
-            if planned_date:
-                day_orders = Order.objects.filter(planned_date=planned_date)
-                total_minutes = sum(o.planned_minutes for o in day_orders)
-                
-                # Если заказ уже был в этом дне, вычитаем его время
-                if order.planned_date == planned_date:
-                    total_minutes -= order.planned_minutes
-                
-                # Добавляем время текущего заказа
-                total_minutes += order.planned_minutes
-                
-                # Проверяем лимит
-                day_minutes_limit = planner_settings.hours_per_day * 60
-                if total_minutes > day_minutes_limit:
-                    return JsonResponse({
-                        'success': False, 
-                        'error': f'Превышен лимит времени в дне. Максимум: {day_minutes_limit} минут.'
-                    })
-            
+            # Обрабатываем planned_date
             if planned_date:
                 order.planned_date = planned_date
+            else:
+                # Если передано null или undefined - очищаем дату
+                order.planned_date = None
             
+            # Обрабатываем порядок в дне
             if order_in_day is not None:
                 order.order_in_day = order_in_day
+            else:
+                order.order_in_day = None
             
             order.save()
             

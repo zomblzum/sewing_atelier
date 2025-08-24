@@ -212,7 +212,8 @@
                 </div>
             </div>
             
-            <div class="orders-container" id="orders-{{ day.date|date:'Y-m-d' }}">
+            <div class="orders-container" id="orders-{{ day.date|date:'Y-m-d' }}"
+                 data-date="{{ day.date|date:'Y-m-d' }}">
                 {% for order in day.orders %}
                 <div class="order-brick" 
                      data-order-id="{{ order.id }}"
@@ -279,26 +280,32 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Инициализация планера...');
     
-    // 1. Инициализация незапланированных заказов
+    // 1. Инициализация незапланированных заказов - РАЗРЕШАЕМ перетаскивание ИЗ этой области
     const unplannedContainer = document.getElementById('unplanned-orders');
     if (unplannedContainer) {
         try {
             new Sortable(unplannedContainer, {
                 group: {
                     name: 'orders',
-                    pull: 'clone',
-                    put: false
+                    pull: 'clone', // Разрешаем брать оттуда
+                    put: true      // Разрешаем возвращать обратно
                 },
-                sort: false,
+                sort: true,        // Разрешаем сортировку
                 animation: 150,
                 ghostClass: 'sortable-ghost',
                 onEnd: function(evt) {
-                    if (evt.to !== evt.from) {
-                        setTimeout(() => {
-                            if (evt.from && evt.item) {
-                                evt.from.appendChild(evt.item);
-                            }
-                        }, 100);
+                    // Если переместили в другую колонку
+                    if (evt.to !== evt.from && evt.to.classList.contains('orders-container')) {
+                        // Элемент уже обработан в onAdd целевой колонки
+                        return;
+                    }
+                    
+                    // Если вернули обратно в "без даты" или переместили внутри
+                    if (evt.from && evt.item) {
+                        // Для перемещения внутри "без даты" обновляем порядок
+                        if (evt.to === evt.from) {
+                            updateUnplannedOrderOrder(evt.to);
+                        }
                     }
                 }
             });
@@ -308,84 +315,111 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 2. Упрощенная инициализация колонок дней
+    // 2. Инициализация всех колонок дней
     const dayColumns = document.querySelectorAll('.orders-container');
     
-dayColumns.forEach(container => {
-    try {
-        const columnElement = container.closest('.planner-column');
-        const totalDayMinutes = parseInt(columnElement?.dataset?.totalMinutes || '480');
-        
-        new Sortable(container, {
-            group: {
-                name: 'orders',
-                put: function(to, from, dragEl) {
-                    // Упрощенная проверка - всегда разрешаем для теста
-                    console.log('Попытка перемещения в колонку');
-                    return true;
-                }
-            },
-            animation: 150,
-            ghostClass: 'sortable-ghost',
-            chosenClass: 'sortable-chosen',
-            dragClass: 'sortable-drag',
-            onAdd: function(evt) {
-                const orderId = evt.item.dataset.orderId;
-                const columnElement = evt.to.closest('.planner-column');
-                if (!orderId || !columnElement) return;
-                
-                const date = columnElement.dataset.date;
-                
-                // Проверяем лимит времени ПОСЛЕ перемещения
-                checkDayLimit(columnElement, orderId).then(canAdd => {
-                    if (canAdd) {
-                        const orders = evt.to.querySelectorAll('.order-brick');
-                        let orderInDay = Array.from(orders).indexOf(evt.item);
-                        
-                        if (orderInDay >= 0) {
-                            updateOrderPlanning(orderId, date, orderInDay);
+    dayColumns.forEach(container => {
+        try {
+            const columnElement = container.closest('.planner-column');
+            const totalDayMinutes = parseInt(columnElement?.dataset?.totalMinutes || '480');
+            
+            new Sortable(container, {
+                group: {
+                    name: 'orders',
+                    put: function(to, from, dragEl) {
+                        // Проверяем лимит времени
+                        try {
+                            let totalMinutes = 0;
+                            const children = to.children;
+                            
+                            if (!children) return true;
+                            
+                            // Суммируем минуты всех заказов в колонке
+                            for (let i = 0; i < children.length; i++) {
+                                const child = children[i];
+                                if (child.classList.contains('order-brick') && child !== dragEl) {
+                                    const minutes = parseInt(child.dataset.minutes || '0');
+                                    totalMinutes += minutes;
+                                }
+                            }
+                            
+                            // Добавляем минуты перетаскиваемого заказа
+                            const dragMinutes = parseInt(dragEl.dataset.minutes || '0');
+                            totalMinutes += dragMinutes;
+                            
+                            // Проверяем лимит
+                            if (totalMinutes > totalDayMinutes) {
+                                alert('Превышен лимит времени в этом дне! Максимум: ' + totalDayMinutes + ' минут.');
+                                return false;
+                            }
+                            
+                            return true;
+                        } catch (e) {
+                            console.error('Ошибка проверки лимита:', e);
+                            return true;
                         }
-                    } else {
-                        // Возвращаем элемент обратно
-                        if (evt.from && evt.item) {
-                            evt.from.appendChild(evt.item);
-                        }
-                        alert('Превышен лимит времени в этом дне!');
                     }
-                });
-            }
-        });
-    } catch (e) {
-        console.error('Ошибка инициализации колонки:', e);
-    }
-});
-
-// Функция проверки лимита на сервере
-function checkDayLimit(columnElement, orderId) {
-    const date = columnElement.dataset.date;
-    
-    return fetch('{% url "check_day_limit" %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({
-            order_id: orderId,
-            planned_date: date
-        })
-    })
-    .then(response => response.json())
-    .then(data => data.can_add)
-    .catch(error => {
-        console.error('Ошибка проверки лимита:', error);
-        return true; // Разрешаем в случае ошибки
+                },
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onAdd: function(evt) {
+                    console.log('onAdd:', {from: evt.from.id, to: evt.to.id, item: evt.item.dataset.orderId});
+                    console.log('onRemove:', {from: evt.from.id, to: evt.to.id, item: evt.item.dataset.orderId});                            
+                    const orderId = evt.item.dataset.orderId;
+                    const columnElement = evt.to.closest('.planner-column');
+                    if (!orderId || !columnElement) return;
+                    
+                    const date = columnElement.dataset.date;
+                    
+                    // Определяем порядок в колонке
+                    const orders = evt.to.querySelectorAll('.order-brick');
+                    let orderInDay = Array.from(orders).indexOf(evt.item);
+                    
+                    if (orderInDay >= 0) {
+                        console.log('Заказ перемещен:', orderId, 'на', date, 'позиция', orderInDay);
+                        updateOrderPlanning(orderId, date, orderInDay);
+                    }
+                },
+                onUpdate: function(evt) {
+                    // Обновляем порядок при изменении позиции внутри колонки
+                    const columnElement = evt.to.closest('.planner-column');
+                    if (!columnElement) return;
+                    
+                    const date = columnElement.dataset.date;
+                    
+                    const orders = evt.to.querySelectorAll('.order-brick');
+                    if (orders && orders.length > 0) {
+                        orders.forEach((order, index) => {
+                            const orderId = order.dataset.orderId;
+                            if (orderId) {
+                                updateOrderPlanning(orderId, date, index);
+                            }
+                        });
+                    }
+                },
+                onRemove: function(evt) {
+                    console.log('onAdd:', {from: evt.from.id, to: evt.to.id, item: evt.item.dataset.orderId});
+                    console.log('onRemove:', {from: evt.from.id, to: evt.to.id, item: evt.item.dataset.orderId});                    
+                    // Если заказ перемещается из колонки дня обратно в "без даты"
+                    if (evt.to && evt.to.id === 'unplanned-orders') {
+                        const orderId = evt.item.dataset.orderId;
+                        if (orderId) {
+                            console.log('Заказ перемещен в "без даты":', orderId);
+                            updateOrderPlanning(orderId, null, null);
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Ошибка инициализации колонки:', e);
+        }
     });
-}
 
     // Функция обновления планирования
     function updateOrderPlanning(orderId, date, orderInDay) {
-        console.log('Обновление планирования:', orderId, date, orderInDay);
+        console.log('Обновление заказа:', {orderId, date, orderInDay});
         
         fetch('{% url "update_order_planning" %}', {
             method: 'POST',
@@ -418,6 +452,13 @@ function checkDayLimit(columnElement, orderId) {
             alert('Ошибка сети: ' + error);
             window.location.reload();
         });
+    }
+
+    // Функция обновления порядка в "без даты"
+    function updateUnplannedOrderOrder(container) {
+        const orders = container.querySelectorAll('.order-brick');
+        console.log('Обновление порядка в "без даты"');
+        // Здесь можно добавить логику для сохранения порядка, если нужно
     }
     
     console.log('Планировщик инициализирован');
