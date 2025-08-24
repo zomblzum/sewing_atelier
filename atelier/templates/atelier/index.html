@@ -249,7 +249,7 @@
 
 {% block extra_js %}
 <script>
-// Выносим функцию в глобальную область видимости
+// Выносим функции в глобальную область видимости ДО DOMContentLoaded
 window.initializeSortable = function() {
     console.log('=== Initializing Sortable ===');
     
@@ -305,7 +305,6 @@ window.initializeSortable = function() {
     }
 }
 
-// Функция проверки элементов
 window.checkElements = function() {
     console.log('Checking elements...');
     console.log('Force init button:', document.getElementById('force-init'));
@@ -317,7 +316,6 @@ window.checkElements = function() {
 // Основной код
 document.addEventListener('DOMContentLoaded', function() {
     console.log('=== DOM fully loaded ===');
-    checkElements();
     
     // Проверяем доступность Sortable
     if (typeof Sortable === 'undefined') {
@@ -352,6 +350,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Проверка сразу после загрузки скрипта
-console.log('=== Script loaded, waiting for DOM ===');
+console.log('=== Script loaded, functions are global ===');
+console.log('initializeSortable available:', typeof initializeSortable === 'function');
+console.log('checkElements available:', typeof checkElements === 'function');
 </script>
 {% endblock %}
