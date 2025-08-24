@@ -1,5 +1,5 @@
 from django import forms
-from .models import Customer, Order, OrderStatus, PlannerSettings
+from .models import Customer, Order, OrderStatus, PlannerSettings, Category
 
 class CustomerForm(forms.ModelForm):
     class Meta:
@@ -12,15 +12,46 @@ class CustomerForm(forms.ModelForm):
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ['name', 'default_price', 'color']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите название категории'
+            }),
+            'default_price': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': '0.00',
+                'step': '0.01',
+                'min': '0'
+            }),
+            'color': forms.TextInput(attrs={
+                'class': 'form-control',
+                'type': 'color'
+            }),
+        }
+        labels = {
+            'name': 'Название категории',
+            'default_price': 'Цена по умолчанию',
+            'color': 'Цвет'
+        }
+        help_texts = {
+            'default_price': 'Цена в рублях',
+            'color': 'Выберите цвет для визуального отличия'
+        } 
+
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ['title', 'customer', 'price', 'comment', 'status', 
-                 'planned_date', 'planned_minutes']  # заменили planned_hours на planned_minutes
+        fields = ['title', 'customer', 'category', 'price', 'comment', 'status', 
+                 'planned_date', 'planned_minutes']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'customer': forms.Select(attrs={'class': 'form-control'}),
-            'price': forms.NumberInput(attrs={'class': 'form-control'}),
+            'category': forms.Select(attrs={'class': 'form-control', 'id': 'category-select'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'id': 'price-input'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'status': forms.Select(attrs={'class': 'form-control'}),
             'planned_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),

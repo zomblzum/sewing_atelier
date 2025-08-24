@@ -22,4 +22,9 @@ urlpatterns = [
     path('orders/<int:pk>/', views.order_detail, name='order_detail'),
     path('orders/<int:pk>/edit/', views.order_edit, name='order_edit'),
     path('orders/<int:pk>/delete/', views.order_delete, name='order_delete'),
+
+    path('categories/', views.category_list, name='category_list'),
+    path('categories/create/', views.category_create, name='category_create'),
+    path('categories/<int:pk>/edit/', views.category_edit, name='category_edit'),
+    path('categories/<int:pk>/delete/', views.category_delete, name='category_delete'),    
 ]

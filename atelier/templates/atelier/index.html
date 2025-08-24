@@ -155,6 +155,24 @@
     margin-top: 4px;
     display: inline-block;
 }
+
+.overlay-limit {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d9534f;
+    font-weight: bold;
+    font-size: 14px;
+    pointer-events: none;
+    border: 2px dashed #d9534f;
+    border-radius: 6px;
+}
 </style>
 {% endblock %}
 
@@ -164,9 +182,6 @@
     <div>
         <a href="{% url 'planner_settings' %}" class="btn btn-outline-secondary me-2">
             <i class="fas fa-cog"></i> Настройки
-        </a>
-        <a href="{% url 'order_status_list' %}" class="btn btn-outline-info me-2">
-            <i class="fas fa-tags"></i> Статусы
         </a>
         <a href="{% url 'order_create' %}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Новый заказ
@@ -182,7 +197,8 @@
     <div class="planner-grid" id="planner-grid">
         {% for day in days %}
         <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
-             data-date="{{ day.date|date:'Y-m-d' }}">
+             data-date="{{ day.date|date:'Y-m-d' }}"
+             data-total-minutes="{{ total_day_minutes }}">
             
             <div class="planner-header">
                 <h5>{{ day.date|date:"l" }}</h5>
@@ -219,6 +235,12 @@
                 </div>
                 {% endfor %}
             </div>
+            
+            {% if day.total_minutes > total_day_minutes %}
+            <div class="overlay-limit">
+                Превышение лимита!
+            </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
@@ -286,24 +308,53 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 2. Инициализация всех колонок дней
+    // 2. Инициализация всех колонок дней с проверкой лимита
     const dayColumns = document.querySelectorAll('.orders-container');
     
     dayColumns.forEach(container => {
+        const columnElement = container.closest('.planner-column');
+        const totalDayMinutes = parseInt(columnElement.dataset.totalMinutes);
+        
         try {
             new Sortable(container, {
-                group: 'orders',
+                group: {
+                    name: 'orders',
+                    put: function(to, from, dragEl) {
+                        // Проверяем, не превысит ли добавление заказа лимит дня
+                        let totalMinutes = 0;
+                        const children = to.children;
+                        
+                        // Суммируем минуты всех заказов в колонке
+                        for (let i = 0; i < children.length; i++) {
+                            if (children[i].classList.contains('order-brick')) {
+                                totalMinutes += parseInt(children[i].dataset.minutes);
+                            }
+                        }
+                        
+                        // Добавляем минуты перетаскиваемого заказа
+                        const dragMinutes = parseInt(dragEl.dataset.minutes);
+                        totalMinutes += dragMinutes;
+                        
+                        // Проверяем лимит
+                        if (totalMinutes > totalDayMinutes) {
+                            alert('Превышен лимит времени в этом дне! Максимум: ' + totalDayMinutes + ' минут.');
+                            return false;
+                        }
+                        
+                        return true;
+                    }
+                },
                 animation: 150,
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
                 dragClass: 'sortable-drag',
                 onAdd: function(evt) {
                     const orderId = evt.item.dataset.orderId;
-                    const columnElement = evt.to;
-                    const date = columnElement.id.replace('orders-', '');
+                    const columnElement = evt.to.closest('.planner-column');
+                    const date = columnElement.dataset.date;
                     
                     // Определяем порядок в колонке
-                    const orderInDay = Array.from(columnElement.children).indexOf(evt.item);
+                    const orderInDay = Array.from(evt.to.children).indexOf(evt.item);
                     
                     console.log('Заказ перемещен:', orderId, 'на', date, 'позиция', orderInDay);
                     updateOrderPlanning(orderId, date, orderInDay);

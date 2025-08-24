@@ -14,6 +14,22 @@ class OrderStatus(models.Model):
     def __str__(self):
         return self.name
 
+class Category(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Название категории")
+    default_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Цена по умолчанию"
+    )
+    color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет")
+    
+    class Meta:
+        verbose_name = "Категория"
+        verbose_name_plural = "Категории"
+    
+    def __str__(self):
+        return self.name    
+
 class Customer(models.Model):
     first_name = models.CharField(max_length=100, verbose_name="Имя")
     last_name = models.CharField(max_length=100, verbose_name="Фамилия")
@@ -58,6 +74,13 @@ class Order(models.Model):
         blank=True,
         verbose_name="Статус"
     )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Категория"
+    )    
     planned_date = models.DateField(null=True, blank=True, verbose_name="Планируемая дата")
     color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет в планере")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
@@ -74,6 +97,14 @@ class Order(models.Model):
         return f"{self.title} ({self.status})"
 
     def save(self, *args, **kwargs):
+        # Если указана категория и цена не была изменена вручную, устанавливаем цену из категории
+        if self.category and not self._state.adding:
+            original = Order.objects.get(pk=self.pk)
+            if original.price == original.category.default_price if original.category else 0:
+                self.price = self.category.default_price
+        elif self.category and self._state.adding:
+            self.price = self.category.default_price
+        
         if not self.status:
             default_status = OrderStatus.objects.filter(is_default=True).first()
             if default_status:

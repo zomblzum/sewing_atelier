@@ -4,8 +4,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST  # Добавьте эту строку
 from datetime import datetime, timedelta
 import json
-from .models import Customer, Order, OrderStatus, PlannerSettings
-from .forms import CustomerForm, OrderForm, OrderStatusForm, PlannerSettingsForm
+from .models import Customer, Order, OrderStatus, PlannerSettings, Category
+from .forms import CustomerForm, OrderForm, OrderStatusForm, PlannerSettingsForm, CategoryForm
 
 def index(request):
     planner_settings = PlannerSettings.objects.first()
@@ -53,9 +53,33 @@ def update_order_planning(request):
             data = json.loads(request.body)
             order_id = data.get('order_id')
             planned_date = data.get('planned_date')
-            order_in_day = data.get('order_in_day')  # новый параметр для порядка
+            order_in_day = data.get('order_in_day')
             
             order = Order.objects.get(id=order_id)
+            planner_settings = PlannerSettings.objects.first()
+            
+            if not planner_settings:
+                planner_settings = PlannerSettings.objects.create()
+            
+            # Проверяем, не превысит ли добавление заказа лимит дня
+            if planned_date:
+                day_orders = Order.objects.filter(planned_date=planned_date)
+                total_minutes = sum(o.planned_minutes for o in day_orders)
+                
+                # Если заказ уже был в этом дне, вычитаем его время
+                if order.planned_date == planned_date:
+                    total_minutes -= order.planned_minutes
+                
+                # Добавляем время текущего заказа
+                total_minutes += order.planned_minutes
+                
+                # Проверяем лимит
+                day_minutes_limit = planner_settings.hours_per_day * 60
+                if total_minutes > day_minutes_limit:
+                    return JsonResponse({
+                        'success': False, 
+                        'error': f'Превышен лимит времени в дне. Максимум: {day_minutes_limit} минут.'
+                    })
             
             if planned_date:
                 order.planned_date = planned_date
@@ -196,3 +220,44 @@ def order_delete(request, pk):
     order = get_object_or_404(Order, pk=pk)
     order.delete()
     return redirect('order_list')
+
+def category_list(request):
+    categories = Category.objects.all()
+    return render(request, 'atelier/category_list.html', {'categories': categories})
+
+def category_create(request):
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('category_list')
+    else:
+        form = CategoryForm()
+    return render(request, 'atelier/category_form.html', {'form': form})
+
+def category_edit(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            return redirect('category_list')
+    else:
+        form = CategoryForm(instance=category)
+    return render(request, 'atelier/category_form.html', {'form': form})
+
+def category_delete(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    
+    if request.method == 'POST':
+        # Можно добавить дополнительную логику перед удалением
+        category.delete()
+        return redirect('category_list')
+    
+    # Получаем количество заказов с этой категорией для отображения в подтверждении
+    orders_count = category.order_set.count()
+    
+    return render(request, 'atelier/category_confirm_delete.html', {
+        'category': category,
+        'orders_count': orders_count
+    })

@@ -3,7 +3,17 @@
 {% block title %}Настройки планера{% endblock %}
 
 {% block content %}
-<h1>Настройки планера</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Настройки планера</h1>
+    <div>
+        <a href="{% url 'order_status_list' %}" class="btn btn-outline-info me-2">
+            <i class="fas fa-tags"></i> Управление статусами
+        </a>
+        <a href="{% url 'category_list' %}" class="btn btn-outline-success">
+            <i class="fas fa-list"></i> Управление категориями
+        </a>
+    </div>
+</div>
 
 <form method="post">
     {% csrf_token %}
