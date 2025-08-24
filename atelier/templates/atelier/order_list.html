@@ -11,6 +11,7 @@
         <tr>
             <th>Название</th>
             <th>Клиент</th>
+            <th>Категория</th>
             <th>Цена</th>
             <th>Статус</th>
             <th>Дата создания</th>
@@ -26,8 +27,21 @@
                     {{ order.customer.last_name }} {{ order.customer.first_name }}
                 </a>
             </td>
+            <td>
+                {% if order.category %}
+                <span class="badge" style="background-color: {{ order.category.color }}; color: white;">
+                    {{ order.category.name }}
+                </span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+            </td>
             <td>{{ order.price }} руб.</td>
-            <td>{{ order.get_status_display }}</td>
+            <td>
+                <span class="badge" style="background-color: {{ order.status.color }}; color: white;">
+                    {{ order.status.name }}
+                </span>
+            </td>
             <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
             <td class="d-flex gap-2">
                 <a href="{% url 'order_detail' pk=order.pk %}" class="btn btn-sm btn-info">Просмотр</a>

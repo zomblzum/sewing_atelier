@@ -25,22 +25,35 @@
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
+                        <strong>Категория:</strong><br>
+                        {% if order.category %}
+                        <span class="badge" style="background-color: {{ order.category.color }}; color: white;">
+                            {{ order.category.name }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted">Не указана</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
                         <strong>Статус:</strong><br>
                         <span class="badge" style="background-color: {{ order.status.color }}; color: white;">
                             {{ order.status.name }}
                         </span>
                     </div>
-                    <div class="col-md-6">
-                        <strong>Цена:</strong><br>
-                        {{ order.price }} руб.
-                    </div>
                 </div>
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
+                        <strong>Цена:</strong><br>
+                        {{ order.price }} руб.
+                    </div>
+                    <div class="col-md-6">
                         <strong>Планируемое время:</strong><br>
                         {{ order.planned_minutes }} минут
                     </div>
+                </div>
+                
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <strong>Планируемая дата:</strong><br>
                         {% if order.planned_date %}
@@ -48,6 +61,9 @@
                         {% else %}
                             <span class="text-muted">Не назначена</span>
                         {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <!-- Пустая ячейка для выравнивания -->
                     </div>
                 </div>
                 

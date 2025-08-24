@@ -2,6 +2,43 @@
 
 {% block title %}{% if form.instance.pk %}Редактирование{% else %}Создание{% endif %} заказа{% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('id_category');
+    const priceInput = document.getElementById('id_price');
+    
+    if (categorySelect && priceInput) {
+        let priceWasManuallyChanged = false;
+        const originalPrice = priceInput.value;
+        
+        priceInput.addEventListener('input', function() {
+            priceWasManuallyChanged = true;
+        });
+        
+        categorySelect.addEventListener('change', function() {
+            if (!priceWasManuallyChanged || priceInput.value === originalPrice || priceInput.value === '') {
+                const categoryId = this.value;
+                if (categoryId) {
+                    // Получаем цену категории через AJAX
+                    fetch(`/api/category/${categoryId}/price/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.price) {
+                                priceInput.value = data.price;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка получения цены категории:', error);
+                        });
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-md-8 mx-auto">
@@ -26,22 +63,33 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">Категория</label>
+                                {{ form.category }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">Статус</label>
+                                {{ form.status }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="{{ form.price.id_for_label }}" class="form-label">Цена (руб.)</label>
                                 {{ form.price }}
+                                <div class="form-text">Автоматически заполняется из категории</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="{{ form.planned_minutes.id_for_label }}" class="form-label">Планируемое время (мин.)</label>
                                 {{ form.planned_minutes }}
-                                <div class="form-text">Укажите продолжительность заказа в минутах</div>
+                                <div class="form-text">Продолжительность заказа в минутах</div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.status.id_for_label }}" class="form-label">Статус</label>
-                        {{ form.status }}
                     </div>
                 </div>
             </div>

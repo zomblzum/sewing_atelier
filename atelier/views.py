@@ -196,7 +196,17 @@ def order_create(request):
             return redirect('order_detail', pk=order.pk)
     else:
         form = OrderForm()
-    return render(request, 'atelier/order_form.html', {'form': form})
+    
+    # Добавляем данные о ценах категорий для JavaScript
+    categories = Category.objects.all()
+    category_choices = []
+    for category in categories:
+        category_choices.append((category.id, category.name, float(category.default_price)))
+    
+    return render(request, 'atelier/order_form.html', {
+        'form': form,
+        'category_choices': category_choices
+    })
 
 def order_edit(request, pk):
     order = get_object_or_404(Order, pk=pk)
@@ -207,7 +217,17 @@ def order_edit(request, pk):
             return redirect('order_detail', pk=order.pk)
     else:
         form = OrderForm(instance=order)
-    return render(request, 'atelier/order_form.html', {'form': form})
+    
+    # Добавляем данные о ценах категорий для JavaScript
+    categories = Category.objects.all()
+    category_choices = []
+    for category in categories:
+        category_choices.append((category.id, category.name, float(category.default_price)))
+    
+    return render(request, 'atelier/order_form.html', {
+        'form': form,
+        'category_choices': category_choices
+    })
 
 @require_POST  # Теперь этот декоратор будет работать
 def customer_delete(request, pk):
@@ -261,3 +281,10 @@ def category_delete(request, pk):
         'category': category,
         'orders_count': orders_count
     })
+
+def get_category_price(request, pk):
+    try:
+        category = Category.objects.get(pk=pk)
+        return JsonResponse({'price': float(category.default_price)})
+    except Category.DoesNotExist:
+        return JsonResponse({'error': 'Category not found'}, status=404)

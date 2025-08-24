@@ -50,8 +50,8 @@ class OrderForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'customer': forms.Select(attrs={'class': 'form-control'}),
-            'category': forms.Select(attrs={'class': 'form-control', 'id': 'category-select'}),
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'id': 'price-input'}),
+            'category': forms.Select(attrs={'class': 'form-control', 'id': 'id_category'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_price'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'status': forms.Select(attrs={'class': 'form-control'}),
             'planned_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
