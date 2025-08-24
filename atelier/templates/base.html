@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Швейное ателье - {% block title %}{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Sortable.js теперь подключается в head - это нормально -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
@@ -31,6 +32,21 @@
         {% block content %}{% endblock %}
     </div>
 
+    <!-- Bootstrap подключается в конце -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        console.log('Planner debug:');
+        console.log('Columns:', document.querySelectorAll('.planner-column').length);
+        console.log('Sortable loaded:', typeof Sortable !== 'undefined');
+        
+        // Дополнительная проверка после загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded');
+            console.log('Planner columns found:', document.querySelectorAll('.planner-column').length);
+            console.log('Hour slots found:', document.querySelectorAll('.hour-slot').length);
+            console.log('Order cards found:', document.querySelectorAll('.order-card').length);
+        });
+    </script>    
 </body>
 </html>
