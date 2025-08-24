@@ -12,25 +12,29 @@
 .planner-grid {
     display: grid;
     grid-template-columns: repeat({{ days|length }}, 1fr);
-    gap: 15px;
-    min-width: 1000px;
+    gap: 10px;
+    min-width: 1200px;
 }
 .planner-day {
     background: #f8f9fa;
     border-radius: 8px;
-    padding: 15px;
-    min-height: 600px;
+    padding: 10px;
+    min-height: 800px;
 }
 .planner-day.weekend {
     background: #e9ecef;
+    opacity: 0.7;
 }
 .planner-header {
     text-align: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
     border-bottom: 2px solid #dee2e6;
+    background: white;
+    border-radius: 6px;
+    padding: 10px;
 }
-.planner-hours {
+.hour-slots {
     display: grid;
     gap: 5px;
 }
@@ -38,33 +42,60 @@
     background: white;
     border: 1px solid #dee2e6;
     border-radius: 4px;
-    padding: 5px;
-    min-height: 40px;
-    font-size: 12px;
+    padding: 8px;
+    min-height: 60px;
+    font-size: 11px;
+    position: relative;
+}
+.hour-label {
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    font-size: 10px;
+    color: #6c757d;
 }
 .order-card {
     border-radius: 6px;
-    padding: 10px;
-    margin-bottom: 8px;
-    cursor: move;
+    padding: 8px;
+    margin: 4px 0;
+    cursor: grab;
     color: white;
-    font-size: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 11px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+}
+.order-card:active {
+    cursor: grabbing;
 }
 .order-card h6 {
-    margin: 0 0 5px 0;
-    font-size: 12px;
+    margin: 0 0 4px 0;
+    font-size: 11px;
     font-weight: bold;
+    line-height: 1.2;
 }
 .order-card p {
     margin: 2px 0;
-    font-size: 11px;
+    font-size: 10px;
+    line-height: 1.1;
 }
 .unplanned-orders {
     background: #f8f9fa;
     padding: 15px;
     border-radius: 8px;
     margin-top: 20px;
+}
+.drag-over {
+    background-color: #e3f2fd !important;
+    border: 2px dashed #2196F3 !important;
+}
+.status-badge {
+    font-size: 9px !important;
+    padding: 2px 4px;
+}
+.empty-slot {
+    min-height: 60px;
+    border: 1px dashed #dee2e6;
+    border-radius: 4px;
 }
 </style>
 {% endblock %}
@@ -73,8 +104,11 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Планировщик заказов</h1>
     <div>
-        <a href="/planner_settings/" class="btn btn-outline-secondary me-2">
+        <a href="{% url 'planner_settings' %}" class="btn btn-outline-secondary me-2">
             <i class="fas fa-cog"></i> Настройки
+        </a>
+        <a href="{% url 'order_status_list' %}" class="btn btn-outline-info me-2">
+            <i class="fas fa-tags"></i> Статусы
         </a>
         <a href="{% url 'order_create' %}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Новый заказ
@@ -94,20 +128,30 @@
                 {% endif %}
             </div>
             
-            <div class="planner-hours">
+            <div class="hour-slots">
                 {% for hour in hours %}
-                <div class="hour-slot" data-hour="{{ hour }}" data-date="{{ day.date|date:'Y-m-d' }}">
-                    <small>{{ hour }}:00</small>
+                <div class="hour-slot" 
+                     data-hour="{{ hour }}" 
+                     data-date="{{ day.date|date:'Y-m-d' }}"
+                     ondrop="dropOrder(event)" 
+                     ondragover="allowDrop(event)"
+                     ondragenter="dragEnter(event)" 
+                     ondragleave="dragLeave(event)">
+                    <span class="hour-label">{{ hour }}:00</span>
+                    
                     {% for order in day.orders %}
                     {% if order.planned_start_time and order.planned_start_time.hour == hour %}
-                    <div class="order-card" style="background-color: {{ order.color }};" 
-                         data-order-id="{{ order.id }}" draggable="true">
-                        <h6>{{ order.title }}</h6>
+                    <div class="order-card" 
+                         style="background-color: {{ order.color }};"
+                         draggable="true"
+                         ondragstart="dragOrder(event)"
+                         data-order-id="{{ order.id }}">
+                        <h6>{{ order.title|truncatechars:20 }}</h6>
                         <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
                         <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
                         <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
                         {% if order.status %}
-                        <span class="badge bg-light text-dark">{{ order.status.name }}</span>
+                        <span class="badge status-badge bg-light text-dark">{{ order.status.name }}</span>
                         {% endif %}
                     </div>
                     {% endif %}
@@ -121,20 +165,27 @@
 </div>
 
 <div class="unplanned-orders mt-4">
-    <h4>Заказы без даты</h4>
-    <div class="row">
+    <h4><i class="fas fa-inbox"></i> Заказы без даты</h4>
+    <div class="row" id="unplanned-orders-container">
         {% for order in orders_without_date %}
         <div class="col-md-3 mb-3">
-            <div class="order-card" style="background-color: {{ order.color }};" 
-                 data-order-id="{{ order.id }}" draggable="true">
-                <h6>{{ order.title }}</h6>
+            <div class="order-card" 
+                 style="background-color: {{ order.color }};"
+                 draggable="true"
+                 ondragstart="dragOrder(event)"
+                 data-order-id="{{ order.id }}">
+                <h6>{{ order.title|truncatechars:20 }}</h6>
                 <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
                 <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
                 <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
                 {% if order.status %}
-                <span class="badge bg-light text-dark">{{ order.status.name }}</span>
+                <span class="badge status-badge bg-light text-dark">{{ order.status.name }}</span>
                 {% endif %}
             </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-muted">Нет заказов без даты</p>
         </div>
         {% endfor %}
     </div>
@@ -143,57 +194,73 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const orderCards = document.querySelectorAll('.order-card');
-    const hourSlots = document.querySelectorAll('.hour-slot');
+let draggedOrderId = null;
+
+function dragOrder(event) {
+    draggedOrderId = event.target.dataset.orderId;
+    event.dataTransfer.setData('text/plain', draggedOrderId);
+    event.dataTransfer.effectAllowed = 'move';
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+}
+
+function dragEnter(event) {
+    event.preventDefault();
+    event.currentTarget.classList.add('drag-over');
+}
+
+function dragLeave(event) {
+    event.currentTarget.classList.remove('drag-over');
+}
+
+function dropOrder(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
     
-    // Функция для обработки перетаскивания
-    orderCards.forEach(card => {
-        card.addEventListener('dragstart', function(e) {
-            e.dataTransfer.setData('order-id', this.dataset.orderId);
-        });
+    const slot = event.currentTarget;
+    const date = slot.dataset.date;
+    const hour = slot.dataset.hour;
+    const orderId = event.dataTransfer.getData('text/plain');
+    
+    // Отправка данных на сервер
+    fetch('{% url "update_order_planning" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            order_id: orderId,
+            planned_date: date,
+            planned_start_time: hour + ':00'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Плавное обновление страницы через 0.5 секунды
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка сети: ' + error);
     });
-    
+}
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    const hourSlots = document.querySelectorAll('.hour-slot');
     hourSlots.forEach(slot => {
-        slot.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            this.style.backgroundColor = '#e3f2fd';
-        });
-        
-        slot.addEventListener('dragleave', function() {
-            this.style.backgroundColor = '';
-        });
-        
-        slot.addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.style.backgroundColor = '';
-            
-            const orderId = e.dataTransfer.getData('order-id');
-            const date = this.dataset.date;
-            const hour = this.dataset.hour;
-            
-            // Отправка данных на сервер
-            fetch('{% url "update_order_planning" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({
-                    order_id: orderId,
-                    planned_date: date,
-                    planned_start_time: hour + ':00'
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Ошибка: ' + data.error);
-                }
-            });
-        });
+        slot.addEventListener('dragover', allowDrop);
+        slot.addEventListener('dragenter', dragEnter);
+        slot.addEventListener('dragleave', dragLeave);
+        slot.addEventListener('drop', dropOrder);
     });
 });
 </script>

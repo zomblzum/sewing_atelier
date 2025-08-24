@@ -6,6 +6,8 @@ urlpatterns = [
     path('update_order_planning/', views.update_order_planning, name='update_order_planning'),
     path('order_statuses/', views.order_status_list, name='order_status_list'),
     path('order_statuses/new/', views.order_status_create, name='order_status_create'),
+    path('order_statuses/<int:pk>/edit/', views.order_status_edit, name='order_status_edit'),
+    path('order_statuses/<int:pk>/delete/', views.order_status_delete, name='order_status_delete'),
     path('planner_settings/', views.planner_settings, name='planner_settings'),
     
     # Существующие URL

@@ -13,6 +13,9 @@ def index(request):
     if not planner_settings:
         planner_settings = PlannerSettings.objects.create()
     
+    # Генерируем часы для отображения
+    hours = list(range(planner_settings.hours_per_day))
+    
     # Получаем заказы с планируемыми датами
     orders = Order.objects.filter(planned_date__isnull=False)
     
@@ -21,17 +24,20 @@ def index(request):
     start_of_week = today - timedelta(days=today.weekday())
     days_of_week = []
     
+    work_days = list(map(int, planner_settings.work_days.split(',')))
+    
     for i in range(7):
         day_date = start_of_week + timedelta(days=i)
         day_orders = orders.filter(planned_date=day_date).order_by('planned_start_time')
         days_of_week.append({
             'date': day_date,
             'orders': day_orders,
-            'is_work_day': str(day_date.weekday() + 1) in planner_settings.work_days.split(',')
+            'is_work_day': (day_date.weekday() + 1) in work_days
         })
     
     context = {
         'days': days_of_week,
+        'hours': hours,
         'planner_settings': planner_settings,
         'orders_without_date': Order.objects.filter(planned_date__isnull=True)
     }
@@ -76,6 +82,26 @@ def order_status_create(request):
     else:
         form = OrderStatusForm()
     return render(request, 'atelier/order_status_form.html', {'form': form})
+
+def order_status_edit(request, pk):
+    status = get_object_or_404(OrderStatus, pk=pk)
+    if request.method == 'POST':
+        form = OrderStatusForm(request.POST, instance=status)
+        if form.is_valid():
+            if form.cleaned_data['is_default']:
+                OrderStatus.objects.filter(is_default=True).update(is_default=False)
+            form.save()
+            return redirect('order_status_list')
+    else:
+        form = OrderStatusForm(instance=status)
+    return render(request, 'atelier/order_status_form.html', {'form': form})
+
+def order_status_delete(request, pk):
+    status = get_object_or_404(OrderStatus, pk=pk)
+    if request.method == 'POST':
+        status.delete()
+        return redirect('order_status_list')
+    return render(request, 'atelier/order_status_confirm_delete.html', {'status': status})
 
 def planner_settings(request):
     settings = PlannerSettings.objects.first()
