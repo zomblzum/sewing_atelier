@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 1. Инициализация незапланированных заказов
     const unplannedContainer = document.getElementById('unplanned-orders');
-    if (unplannedContainer && unplannedContainer.children.length > 0) {
+    if (unplannedContainer) {
         try {
             new Sortable(unplannedContainer, {
                 group: {
@@ -313,26 +313,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     dayColumns.forEach(container => {
         const columnElement = container.closest('.planner-column');
-        const totalDayMinutes = parseInt(columnElement.dataset.totalMinutes);
+        if (!columnElement) return;
+        
+        const totalDayMinutes = parseInt(columnElement.dataset.totalMinutes || 480); // default 8 hours
         
         try {
             new Sortable(container, {
                 group: {
                     name: 'orders',
                     put: function(to, from, dragEl) {
+                        // Проверяем, что to существует и является DOM-элементом
+                        if (!to || !to.children) return false;
+                        
                         // Проверяем, не превысит ли добавление заказа лимит дня
                         let totalMinutes = 0;
                         const children = to.children;
                         
-                        // Суммируем минуты всех заказов в колонке
+                        // Суммируем минуты всех заказов в колонке (исключая dragEl)
                         for (let i = 0; i < children.length; i++) {
-                            if (children[i].classList.contains('order-brick')) {
-                                totalMinutes += parseInt(children[i].dataset.minutes);
+                            const child = children[i];
+                            if (child.classList.contains('order-brick') && child !== dragEl) {
+                                const minutes = parseInt(child.dataset.minutes || 0);
+                                totalMinutes += minutes;
                             }
                         }
                         
                         // Добавляем минуты перетаскиваемого заказа
-                        const dragMinutes = parseInt(dragEl.dataset.minutes);
+                        const dragMinutes = parseInt(dragEl.dataset.minutes || 0);
                         totalMinutes += dragMinutes;
                         
                         // Проверяем лимит
@@ -351,21 +358,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 onAdd: function(evt) {
                     const orderId = evt.item.dataset.orderId;
                     const columnElement = evt.to.closest('.planner-column');
+                    if (!orderId || !columnElement) return;
+                    
                     const date = columnElement.dataset.date;
                     
                     // Определяем порядок в колонке
-                    const orderInDay = Array.from(evt.to.children).indexOf(evt.item);
+                    const orders = evt.to.querySelectorAll('.order-brick');
+                    let orderInDay = Array.from(orders).indexOf(evt.item);
                     
-                    console.log('Заказ перемещен:', orderId, 'на', date, 'позиция', orderInDay);
-                    updateOrderPlanning(orderId, date, orderInDay);
+                    if (orderInDay >= 0) {
+                        console.log('Заказ перемещен:', orderId, 'на', date, 'позиция', orderInDay);
+                        updateOrderPlanning(orderId, date, orderInDay);
+                    }
                 },
                 onUpdate: function(evt) {
                     // Обновляем порядок при изменении позиции внутри колонки
-                    const columnElement = evt.to;
-                    const date = columnElement.id.replace('orders-', '');
+                    const columnElement = evt.to.closest('.planner-column');
+                    if (!columnElement) return;
+                    
+                    const date = columnElement.dataset.date;
                     
                     // Обновляем порядок для всех элементов в колонке
-                    const orders = columnElement.querySelectorAll('.order-brick');
+                    const orders = evt.to.querySelectorAll('.order-brick');
                     if (orders && orders.length > 0) {
                         orders.forEach((order, index) => {
                             const orderId = order.dataset.orderId;
