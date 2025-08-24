@@ -6,37 +6,45 @@
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
-/* Базовые стили */
-.planner-container {
-    width: 100%;
-    overflow-x: auto;
+/* Полный сброс стилей для планера */
+.planner-container * {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-/* Важно: убираем любые унаследованные стили Bootstrap */
+/* Основной контейнер */
+.planner-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 20px 0;
+    padding: 0;
+}
+
+/* Сетка - гарантированно горизонтальная */
 .planner-grid {
     display: flex !important;
     flex-direction: row !important;
+    flex-wrap: nowrap !important;
     gap: 15px;
     padding: 10px;
     min-width: max-content;
 }
 
+/* Колонки */
 .planner-column {
-    flex: 0 0 280px;
+    flex: 0 0 300px;
     background: #f8f9fa;
     border-radius: 10px;
     padding: 15px;
     min-height: 700px;
 }
 
-/* Остальные стили */
 .planner-column.weekend {
     background: #e9ecef;
-    opacity: 0.9;
 }
 
+/* Заголовок колонки */
 .planner-header {
     text-align: center;
     margin-bottom: 15px;
@@ -46,6 +54,7 @@
     border: 1px solid #dee2e6;
 }
 
+/* Слоты времени */
 .hour-slots {
     display: flex;
     flex-direction: column;
@@ -70,6 +79,7 @@
     font-weight: bold;
 }
 
+/* Карточки заказов */
 .order-card {
     border-radius: 6px;
     padding: 10px;
@@ -83,7 +93,6 @@
 
 .order-card:active {
     cursor: grabbing;
-    transform: rotate(2deg);
 }
 
 .order-card:hover {
@@ -91,11 +100,7 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.status-badge {
-    font-size: 10px !important;
-    padding: 2px 5px;
-}
-
+/* Секция незапланированных заказов */
 .unplanned-section {
     background: #f8f9fa;
     padding: 20px;
@@ -110,6 +115,7 @@
     margin-top: 15px;
 }
 
+/* Стили для Sortable */
 .sortable-ghost {
     opacity: 0.4;
 }
@@ -122,15 +128,21 @@
     opacity: 0.9;
 }
 
-.empty-slot {
-    min-height: 80px;
-    border: 2px dashed #dee2e6;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #6c757d;
-    font-size: 12px;
+/* Убираем все возможные влияния Bootstrap */
+.planner-container .row,
+.planner-container .col,
+.planner-container .container {
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    flex: none !important;
+}
+
+/* Принудительное отображение в строку */
+.force-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
 }
 </style>
 {% endblock %}
@@ -152,7 +164,7 @@
 </div>
 
 <div class="planner-container">
-    <div class="planner-grid" id="planner-grid">
+    <div class="planner-grid force-row" id="planner-grid">
         {% for day in days %}
         <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
              data-date="{{ day.date|date:'Y-m-d' }}">
@@ -173,7 +185,6 @@
                     
                     <span class="hour-label">{{ hour }}:00</span>
                     
-                    <!-- Контейнер для заказов в этом слоте -->
                     <div class="orders-container">
                         {% for order in day.orders %}
                         {% if order.planned_start_time and order.planned_start_time.hour == hour %}
@@ -186,7 +197,7 @@
                             <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
                             
                             {% if order.status %}
-                            <span class="badge status-badge bg-light text-dark">
+                            <span class="badge bg-light text-dark">
                                 {{ order.status.name }}
                             </span>
                             {% endif %}
@@ -217,7 +228,7 @@
             <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
             
             {% if order.status %}
-            <span class="badge status-badge bg-light text-dark">
+            <span class="badge bg-light text-dark">
                 {{ order.status.name }}
             </span>
             {% endif %}
@@ -227,6 +238,13 @@
         {% endfor %}
     </div>
 </div>
+
+<!-- Кнопка принудительной инициализации -->
+<div class="mt-3">
+    <button id="force-init" class="btn btn-warning">
+        <i class="fas fa-sync-alt"></i> Принудительная инициализация перетаскивания
+    </button>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -234,11 +252,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded - initializing Sortable');
     
-    // Ждем немного, чтобы все элементы точно были в DOM
-    setTimeout(function() {
+    // Функция инициализации Sortable
+    function initializeSortable() {
+        console.log('Initializing Sortable...');
+        
         // 1. Инициализация незапланированных заказов
         const unplannedContainer = document.getElementById('unplanned-orders');
-        if (unplannedContainer && unplannedContainer.children.length > 0) {
+        if (unplannedContainer) {
             try {
                 new Sortable(unplannedContainer, {
                     group: {
@@ -254,6 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             setTimeout(() => {
                                 if (evt.from && evt.item) {
                                     evt.from.appendChild(evt.item);
+                                    console.log('Element returned to source');
                                 }
                             }, 100);
                         }
@@ -275,8 +296,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     group: 'orders',
                     animation: 150,
                     ghostClass: 'sortable-ghost',
-                    chosenClass: 'sortable-chosen',
-                    dragClass: 'sortable-drag',
                     onAdd: function(evt) {
                         const orderId = evt.item.dataset.orderId;
                         const slotElement = evt.to.closest('.hour-slot');
@@ -293,15 +312,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error initializing container:', e);
             }
         });
-
-        // 3. Принудительно применяем flex-расположение
-        const plannerGrid = document.getElementById('planner-grid');
-        if (plannerGrid) {
-            plannerGrid.style.display = 'flex';
-            plannerGrid.style.flexDirection = 'row';
-            console.log('Forced flex layout');
-        }
-    }, 100); // небольшая задержка для гарантии загрузки DOM
+        
+        console.log('Sortable initialization complete');
+    }
 
     // Функция обновления планирования
     function updateOrderPlanning(orderId, date, hour) {
@@ -333,6 +346,22 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Ошибка сети: ' + error);
             window.location.reload();
         });
+    }
+
+    // Инициализация при загрузке
+    setTimeout(initializeSortable, 500);
+    
+    // Кнопка принудительной инициализации
+    document.getElementById('force-init').addEventListener('click', function() {
+        console.log('Manual initialization triggered');
+        initializeSortable();
+        alert('Перетаскивание переинициализировано. Проверьте консоль для details.');
+    });
+    
+    // Принудительно применяем горизонтальное расположение
+    const plannerGrid = document.getElementById('planner-grid');
+    if (plannerGrid) {
+        plannerGrid.classList.add('force-row');
     }
 });
 </script>
