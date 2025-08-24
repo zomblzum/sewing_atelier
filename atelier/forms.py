@@ -65,13 +65,15 @@ class OrderForm(forms.ModelForm):
                 'placeholder': 'Введите время в минутах'
             }),
         }
-        
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Устанавливаем подсказку для поля planned_minutes
-        self.fields['planned_minutes'].help_text = 'Продолжительность заказа в минутах'
-        if self.instance and self.instance.pk:
-            print(f"Editing order {self.instance.pk}, planned_date: {self.instance.planned_date}")        
+        
+        # Преобразуем дату в правильный формат для HTML5 input[type="date"]
+        if self.instance and self.instance.planned_date:
+            # Конвертируем дату в формат YYYY-MM-DD
+            self.initial['planned_date'] = self.instance.planned_date.strftime('%Y-%m-%d')
+            print(f"Form initialized with planned_date: {self.initial['planned_date']}")   
 
 class OrderStatusForm(forms.ModelForm):
     class Meta:

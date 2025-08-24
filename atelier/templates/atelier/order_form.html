@@ -10,20 +10,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const plannedDateInput = document.getElementById('id_planned_date');
     
     // Отладочная информация
-    console.log('Planned date value:', plannedDateInput?.value);
+    console.log('Planned date input value:', plannedDateInput?.value);
     
     if (categorySelect && priceInput) {
-        // Сохраняем исходную цену для проверки изменений
         const originalPrice = priceInput.value;
         let priceWasManuallyChanged = false;
         
-        // Отслеживаем ручное изменение цены
         priceInput.addEventListener('input', function() {
             priceWasManuallyChanged = true;
         });
         
         categorySelect.addEventListener('change', function() {
-            // Если цена не была изменена вручную, обновляем ее из категории
             if (!priceWasManuallyChanged || priceInput.value === originalPrice || priceInput.value === '') {
                 const selectedOption = categorySelect.options[categorySelect.selectedIndex];
                 const price = selectedOption.getAttribute('data-price');
@@ -32,6 +29,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        
+        // Инициализируем цену при загрузке, если категория выбрана
+        if (categorySelect.value) {
+            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+            const price = selectedOption.getAttribute('data-price');
+            if (price && (!priceWasManuallyChanged || priceInput.value === originalPrice || priceInput.value === '')) {
+                priceInput.value = price;
+            }
+        }
     }
 });
 </script>
@@ -44,9 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         <form method="post" id="orderForm">
             {% csrf_token %}
-            
-            <!-- Скрытые поля для отладки -->
-            <input type="hidden" name="debug_planned_date" value="{{ form.instance.planned_date|default:'' }}">
             
             <div class="card mb-4">
                 <div class="card-header">Основная информация</div>
@@ -122,16 +125,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% if form.planned_date.errors %}
                         <div class="text-danger">{{ form.planned_date.errors }}</div>
                         {% endif %}
+                        {% if form.instance.planned_date %}
                         <div class="form-text">
-                            Текущее значение: 
-                            <strong id="currentDateValue">
-                                {% if form.instance.planned_date %}
-                                    {{ form.instance.planned_date|date:"d.m.Y" }}
-                                {% else %}
-                                    Не указана
-                                {% endif %}
-                            </strong>
+                            Текущее значение: {{ form.instance.planned_date|date:"d.m.Y" }}
                         </div>
+                        {% endif %}
                     </div>
                     
                     <div class="mb-3">
@@ -168,40 +166,5 @@ document.addEventListener('DOMContentLoaded', function() {
         background-color: #f8f9fa;
         font-weight: 600;
     }
-    
-    #currentDateValue {
-        color: #0d6efd;
-    }
 </style>
-
-<script>
-// Дополнительная отладка для даты
-document.addEventListener('DOMContentLoaded', function() {
-    const plannedDateInput = document.getElementById('id_planned_date');
-    const currentDateValue = document.getElementById('currentDateValue');
-    
-    if (plannedDateInput) {
-        console.log('Planned date input found:', plannedDateInput.value);
-        
-        // Обновляем отображение при изменении даты
-        plannedDateInput.addEventListener('change', function() {
-            if (this.value) {
-                const date = new Date(this.value);
-                currentDateValue.textContent = date.toLocaleDateString('ru-RU');
-            } else {
-                currentDateValue.textContent = 'Не указана';
-            }
-        });
-    }
-    
-    // Логируем данные формы перед отправкой
-    const form = document.getElementById('orderForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            console.log('Form submission - planned_date:', document.getElementById('id_planned_date')?.value);
-            console.log('Form data:', new FormData(form));
-        });
-    }
-});
-</script>
 {% endblock %}
