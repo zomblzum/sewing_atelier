@@ -22,7 +22,7 @@
         {% for status in statuses %}
         <tr>
             <td>{{ status.name }}</td>
-            <td><span class="badge" style="background-color: {{ status.color }};">{{ status.color }}</span></td>
+            <td><span class="badge" style="background-color: {{ status.color }}; color: white;">{{ status.color }}</span></td>
             <td>{% if status.is_default %}<i class="fas fa-check text-success"></i>{% endif %}</td>
             <td>
                 <a href="{% url 'order_status_edit' pk=status.pk %}" class="btn btn-sm btn-warning">Редактировать</a>
@@ -36,4 +36,8 @@
         {% endfor %}
     </tbody>
 </table>
+
+<a href="{% url 'planner_settings' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад к настройкам
+</a>
 {% endblock %}

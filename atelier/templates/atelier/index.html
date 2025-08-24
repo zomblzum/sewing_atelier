@@ -366,10 +366,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Обновляем порядок для всех элементов в колонке
                     const orders = columnElement.querySelectorAll('.order-brick');
-                    orders.forEach((order, index) => {
-                        const orderId = order.dataset.orderId;
-                        updateOrderPlanning(orderId, date, index);
-                    });
+                    if (orders && orders.length > 0) {
+                        orders.forEach((order, index) => {
+                            const orderId = order.dataset.orderId;
+                            if (orderId) {
+                                updateOrderPlanning(orderId, date, index);
+                            }
+                        });
+                    }
                 }
             });
         } catch (e) {
