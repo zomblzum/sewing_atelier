@@ -13,15 +13,23 @@
     margin: 20px 0;
 }
 
-.planner-table {
-    display: flex;
-    flex-direction: row;
+.planner-grid {
+    display: grid;
+    grid-template-columns: 70px repeat({{ days|length }}, 1fr);
+    gap: 15px;
     min-width: max-content;
 }
 
 .time-column {
-    flex: 0 0 70px;
-    margin-top: 70px; /* Высота заголовка дня */
+    grid-column: 1;
+    display: grid;
+    grid-template-rows: 70px repeat({{ hours|length }}, 1fr);
+    margin-top: 0;
+}
+
+.time-header {
+    height: 70px;
+    box-sizing: border-box;
 }
 
 .time-slot {
@@ -37,15 +45,18 @@
 }
 
 .days-container {
-    display: flex;
+    grid-column: 2 / span {{ days|length }};
+    display: grid;
+    grid-template-columns: repeat({{ days|length }}, 1fr);
     gap: 15px;
 }
 
 .planner-column {
-    flex: 0 0 250px;
     background: #f8f9fa;
     border-radius: 10px;
     min-height: 700px;
+    display: grid;
+    grid-template-rows: 70px repeat({{ hours|length }}, 1fr);
 }
 
 .planner-column.weekend {
@@ -55,25 +66,25 @@
 
 .planner-header {
     text-align: center;
-    margin-bottom: 15px;
     padding: 12px;
     background: white;
     border-radius: 8px 8px 0 0;
     border: 1px solid #dee2e6;
     height: 70px;
     box-sizing: border-box;
+    grid-row: 1;
 }
 
 .hour-slots {
-    display: flex;
-    flex-direction: column;
+    grid-row: 2 / span {{ hours|length }};
+    display: grid;
+    grid-template-rows: repeat({{ hours|length }}, 90px);
 }
 
 .hour-slot {
     background: white;
     border: 1px solid #dee2e6;
     border-top: none;
-    min-height: 90px;
     position: relative;
 }
 
@@ -85,6 +96,7 @@
 .orders-container {
     min-height: 88px;
     padding: 5px;
+    height: 100%;
 }
 
 .order-card {
@@ -180,10 +192,10 @@
 </div>
 
 <div class="planner-container">
-    <div class="planner-table">
+    <div class="planner-grid">
         <!-- Колонка с временем -->
         <div class="time-column">
-            <div style="height: 70px;"></div> <!-- Пустой элемент для выравнивания с заголовками -->
+            <div class="time-header"></div> <!-- Пустой элемент для выравнивания с заголовками -->
             {% for hour in hours %}
             <div class="time-slot">{{ hour }}:00</div>
             {% endfor %}
