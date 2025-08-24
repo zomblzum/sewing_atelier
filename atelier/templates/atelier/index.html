@@ -15,87 +15,70 @@
     border-radius: 6px;
 }
 
-.planner-table {
-    display: table;
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 800px;
+.planner-grid {
+    display: grid;
+    grid-template-columns: 60px repeat({{ days|length }}, minmax(150px, 1fr));
+    min-width: max-content;
 }
 
-.planner-header-row {
-    display: table-row;
-}
-
-.planner-time-header {
-    display: table-cell;
-    width: 60px;
-    min-width: 60px;
-    vertical-align: middle;
-    text-align: center;
-    padding: 15px 5px;
+.grid-header {
     background: white;
+    padding: 15px 10px;
+    text-align: center;
     border-bottom: 1px solid #dee2e6;
     border-right: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 60px;
+}
+
+.time-header {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
     font-weight: bold;
 }
 
-.planner-day-header {
-    display: table-cell;
-    min-width: 150px;
-    text-align: center;
-    padding: 15px 10px;
-    background: white;
-    border-bottom: 1px solid #dee2e6;
-    border-right: 1px solid #dee2e6;
-    vertical-align: middle;
+.day-header {
+    grid-column: {{ forloop.counter0|add:2 }} / span 1;
+    grid-row: 1 / 2;
 }
 
-.planner-day-header.weekend {
+.day-header.weekend {
     background: #e9ecef;
 }
 
-.planner-day-header h5 {
+.day-header h5 {
     margin: 0;
     font-size: 14px;
     font-weight: bold;
 }
 
-.planner-day-header small {
+.day-header small {
     font-size: 11px;
     color: #6c757d;
 }
 
-.planner-body {
-    display: table-row-group;
-}
-
-.planner-row {
-    display: table-row;
-}
-
 .time-cell {
-    display: table-cell;
-    width: 60px;
-    min-width: 60px;
-    text-align: center;
     padding: 5px;
+    text-align: center;
     font-size: 12px;
     color: #6c757d;
     border-right: 1px solid #dee2e6;
     border-bottom: 1px solid #dee2e6;
-    vertical-align: top;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
 }
 
 .hour-cell {
-    display: table-cell;
     height: 60px;
-    min-width: 150px;
     background: white;
     border-bottom: 1px solid #dee2e6;
     border-right: 1px solid #dee2e6;
     position: relative;
     padding: 2px;
-    vertical-align: top;
 }
 
 .hour-cell.weekend {
@@ -200,6 +183,13 @@
     align-items: center;
     gap: 8px;
 }
+
+/* Бейдж для выходных */
+.weekend-badge {
+    font-size: 8px;
+    padding: 1px 3px;
+    margin-top: 2px;
+}
 </style>
 {% endblock %}
 
@@ -220,64 +210,62 @@
 </div>
 
 <div class="planner-container">
-    <div class="planner-table">
-        <!-- Заголовок с днями -->
-        <div class="planner-header-row">
-            <div class="planner-time-header">
-                Время
-            </div>
-            {% for day in days %}
-            <div class="planner-day-header {% if not day.is_work_day %}weekend{% endif %}" 
-                 data-date="{{ day.date|date:'Y-m-d' }}">
-                <h5>{{ day.date|date:"D" }}</h5>
-                <small>{{ day.date|date:"d.m" }}</small>
-                {% if not day.is_work_day %}
-                <span class="badge bg-secondary" style="font-size: 8px; padding: 1px 3px;">Вых</span>
-                {% endif %}
-            </div>
-            {% endfor %}
+    <div class="planner-grid">
+        <!-- Заголовок времени -->
+        <div class="grid-header time-header">
+            Время
         </div>
         
-        <!-- Тело таблицы с временными слотами -->
-        <div class="planner-body">
-            {% for hour in hours %}
-            <div class="planner-row">
-                <div class="time-cell">
-                    {{ hour }}:00
-                </div>
-                
-                {% for day in days %}
-                <div class="hour-cell {% if not day.is_work_day %}weekend{% endif %} {% if not day.orders %}empty{% endif %}" 
-                     data-hour="{{ hour }}" 
-                     data-date="{{ day.date|date:'Y-m-d' }}">
+        <!-- Заголовки дней -->
+        {% for day in days %}
+        <div class="grid-header day-header {% if not day.is_work_day %}weekend{% endif %}" 
+             data-date="{{ day.date|date:'Y-m-d' }}">
+            <h5>{{ day.date|date:"D" }}</h5>
+            <small>{{ day.date|date:"d.m" }}</small>
+            {% if not day.is_work_day %}
+            <span class="badge bg-secondary weekend-badge">Вых</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+        
+        <!-- Ячейки времени и заказов -->
+        {% for hour in hours %}
+        <!-- Ячейка времени -->
+        <div class="time-cell">
+            {{ hour }}:00
+        </div>
+        
+        <!-- Ячейки заказов для каждого дня -->
+        {% for day in days %}
+        <div class="hour-cell {% if not day.is_work_day %}weekend{% endif %} {% if not day.orders %}empty{% endif %}" 
+             data-hour="{{ hour }}" 
+             data-date="{{ day.date|date:'Y-m-d' }}">
+            
+            <div class="orders-container">
+                {% for order in day.orders %}
+                {% if order.planned_start_time and order.planned_start_time.hour == hour %}
+                <div class="order-card" 
+                     data-order-id="{{ order.id }}"
+                     style="background-color: {{ order.color }};">
                     
-                    <div class="orders-container">
-                        {% for order in day.orders %}
-                        {% if order.planned_start_time and order.planned_start_time.hour == hour %}
-                        <div class="order-card" 
-                             data-order-id="{{ order.id }}"
-                             style="background-color: {{ order.color }};">
-                            
-                            <h6>{{ order.title|truncatechars:15 }}</h6>
-                            <div class="order-info">
-                                <span><i class="fas fa-user"></i> {{ order.customer.first_name|first }}.</span>
-                                <span><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</span>
-                            </div>
-                            
-                            {% if order.status %}
-                            <span class="badge status-badge bg-light text-dark">
-                                {{ order.status.name|truncatechars:10 }}
-                            </span>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                        {% endfor %}
+                    <h6>{{ order.title|truncatechars:15 }}</h6>
+                    <div class="order-info">
+                        <span><i class="fas fa-user"></i> {{ order.customer.first_name|first }}.</span>
+                        <span><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</span>
                     </div>
+                    
+                    {% if order.status %}
+                    <span class="badge status-badge bg-light text-dark">
+                        {{ order.status.name|truncatechars:10 }}
+                    </span>
+                    {% endif %}
                 </div>
+                {% endif %}
                 {% endfor %}
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
+        {% endfor %}
     </div>
 </div>
 
