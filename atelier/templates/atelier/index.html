@@ -249,19 +249,8 @@
 
 {% block extra_js %}
 <script>
-console.log('=== DEBUG: Script started ===');
-
-// Простая проверка доступности элементов
-function checkElements() {
-    console.log('Checking elements...');
-    console.log('Force init button:', document.getElementById('force-init'));
-    console.log('Planner grid:', document.getElementById('planner-grid'));
-    console.log('Unplanned orders:', document.getElementById('unplanned-orders'));
-    console.log('Order containers:', document.querySelectorAll('.orders-container').length);
-}
-
-// Функция инициализации Sortable
-function initializeSortable() {
+// Выносим функцию в глобальную область видимости
+window.initializeSortable = function() {
     console.log('=== Initializing Sortable ===');
     
     try {
@@ -316,6 +305,15 @@ function initializeSortable() {
     }
 }
 
+// Функция проверки элементов
+window.checkElements = function() {
+    console.log('Checking elements...');
+    console.log('Force init button:', document.getElementById('force-init'));
+    console.log('Planner grid:', document.getElementById('planner-grid'));
+    console.log('Unplanned orders:', document.getElementById('unplanned-orders'));
+    console.log('Order containers:', document.querySelectorAll('.orders-container').length);
+}
+
 // Основной код
 document.addEventListener('DOMContentLoaded', function() {
     console.log('=== DOM fully loaded ===');
@@ -355,7 +353,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Проверка сразу после загрузки скрипта
 console.log('=== Script loaded, waiting for DOM ===');
-checkElements();
 </script>
 {% endblock %}
-
