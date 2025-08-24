@@ -13,15 +13,25 @@
     padding: 0;
 }
 
-/* Основные стили */
-.planner-wrapper {
-    display: flex;
+/* Основной контейнер */
+.planner-container {
     width: 100%;
+    overflow-x: auto;
+    margin: 20px 0;
 }
 
+/* Контейнер для времени и сетки - ВАЖНО: flex row */
+.planner-wrapper {
+    display: flex;
+    flex-direction: row; /* Главное исправление! */
+    align-items: flex-start;
+    gap: 0;
+}
+
+/* Колонка с временами */
 .time-column {
-    width: 60px;
-    flex-shrink: 0;
+    flex: 0 0 60px;
+    margin-top: 60px; /* Совпадает с высотой заголовка */
 }
 
 .time-slot {
@@ -33,18 +43,25 @@
     color: #6c757d;
     border-right: 1px solid #dee2e6;
     border-bottom: 1px solid #dee2e6;
+    background: white;
 }
 
+/* Сетка планера */
 .planner-grid {
     display: flex;
-    overflow-x: auto;
-    flex-grow: 1;
+    flex-direction: row;
+    flex: 1;
+    min-width: 0;
 }
 
 .planner-column {
+    flex: 1;
     min-width: 150px;
     background: #f8f9fa;
-    border-right: 1px solid #dee2e6;
+}
+
+.planner-column.weekend {
+    background: #e9ecef;
 }
 
 .planner-header {
@@ -56,16 +73,43 @@
     padding: 5px;
     background: white;
     border-bottom: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    text-align: center;
+}
+
+.planner-header h5 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+.planner-header small {
+    font-size: 11px;
+    color: #6c757d;
+    line-height: 1.2;
+}
+
+/* Слоты времени */
+.hour-slots {
+    display: flex;
+    flex-direction: column;
 }
 
 .hour-slot {
     height: 60px;
+    background: white;
     border-bottom: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
     padding: 2px;
     position: relative;
 }
 
-/* Остальные стили остаются без изменений */
+.hour-slot.empty {
+    background-color: #f8f9fa;
+}
+
+/* Карточки заказов */
 .order-card {
     border-radius: 4px;
     padding: 4px;
@@ -76,6 +120,44 @@
     height: 54px;
     overflow: hidden;
 }
+
+.order-card h6 {
+    margin: 0 0 2px 0;
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.order-card p {
+    margin: 1px 0;
+    font-size: 9px;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Остальные стили */
+.unplanned-section {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 20px;
+}
+
+/* Диагностика - можно удалить после проверки */
+.debug {
+    border: 1px solid red;
+}
+
+.planner-wrapper { border: 2px solid red; }
+.time-column { border: 2px solid blue; }
+.planner-grid { border: 2px solid green; }
+.planner-column { border: 1px solid orange; }
+.hour-slot { border: 1px dashed #ccc; }
 </style>
 {% endblock %}
 
