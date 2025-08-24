@@ -308,49 +308,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 2. Инициализация всех колонок дней с проверкой лимита
+    // 2. Упрощенная инициализация колонок дней
     const dayColumns = document.querySelectorAll('.orders-container');
     
     dayColumns.forEach(container => {
-        const columnElement = container.closest('.planner-column');
-        if (!columnElement) return;
-        
-        const totalDayMinutes = parseInt(columnElement.dataset.totalMinutes || 480); // default 8 hours
-        
         try {
             new Sortable(container, {
-                group: {
-                    name: 'orders',
-                    put: function(to, from, dragEl) {
-                        // Проверяем, что to существует и является DOM-элементом
-                        if (!to || !to.children) return false;
-                        
-                        // Проверяем, не превысит ли добавление заказа лимит дня
-                        let totalMinutes = 0;
-                        const children = to.children;
-                        
-                        // Суммируем минуты всех заказов в колонке (исключая dragEl)
-                        for (let i = 0; i < children.length; i++) {
-                            const child = children[i];
-                            if (child.classList.contains('order-brick') && child !== dragEl) {
-                                const minutes = parseInt(child.dataset.minutes || 0);
-                                totalMinutes += minutes;
-                            }
-                        }
-                        
-                        // Добавляем минуты перетаскиваемого заказа
-                        const dragMinutes = parseInt(dragEl.dataset.minutes || 0);
-                        totalMinutes += dragMinutes;
-                        
-                        // Проверяем лимит
-                        if (totalMinutes > totalDayMinutes) {
-                            alert('Превышен лимит времени в этом дне! Максимум: ' + totalDayMinutes + ' минут.');
-                            return false;
-                        }
-                        
-                        return true;
-                    }
-                },
+                group: 'orders',
                 animation: 150,
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
@@ -364,32 +328,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Определяем порядок в колонке
                     const orders = evt.to.querySelectorAll('.order-brick');
-                    let orderInDay = Array.from(orders).indexOf(evt.item);
+                    let orderInDay = -1;
+                    
+                    for (let i = 0; i < orders.length; i++) {
+                        if (orders[i] === evt.item) {
+                            orderInDay = i;
+                            break;
+                        }
+                    }
                     
                     if (orderInDay >= 0) {
                         console.log('Заказ перемещен:', orderId, 'на', date, 'позиция', orderInDay);
                         updateOrderPlanning(orderId, date, orderInDay);
                     }
-                },
-                onUpdate: function(evt) {
-                    // Обновляем порядок при изменении позиции внутри колонки
-                    const columnElement = evt.to.closest('.planner-column');
-                    if (!columnElement) return;
-                    
-                    const date = columnElement.dataset.date;
-                    
-                    // Обновляем порядок для всех элементов в колонке
-                    const orders = evt.to.querySelectorAll('.order-brick');
-                    if (orders && orders.length > 0) {
-                        orders.forEach((order, index) => {
-                            const orderId = order.dataset.orderId;
-                            if (orderId) {
-                                updateOrderPlanning(orderId, date, index);
-                            }
-                        });
-                    }
                 }
             });
+            console.log('Колонка инициализирована');
         } catch (e) {
             console.error('Ошибка инициализации колонки:', e);
         }
@@ -397,6 +351,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция обновления планирования
     function updateOrderPlanning(orderId, date, orderInDay) {
+        console.log('Обновление планирования:', orderId, date, orderInDay);
+        
         fetch('{% url "update_order_planning" %}', {
             method: 'POST',
             headers: {
