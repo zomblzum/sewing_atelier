@@ -1,12 +1,96 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Customer, Order
-from .forms import CustomerForm, OrderForm
-from django.views.decorators.http import require_POST
-from django.contrib import messages
-
+from django.http import JsonResponse
+from django.utils import timezone
+from django.views.decorators.http import require_POST  # Добавьте эту строку
+from datetime import datetime, timedelta
+import json
+from .models import Customer, Order, OrderStatus, PlannerSettings
+from .forms import CustomerForm, OrderForm, OrderStatusForm, PlannerSettingsForm
 
 def index(request):
-    return render(request, 'atelier/index.html')  # или перенаправьте на другую страницу
+    # Получаем настройки планера
+    planner_settings = PlannerSettings.objects.first()
+    if not planner_settings:
+        planner_settings = PlannerSettings.objects.create()
+    
+    # Получаем заказы с планируемыми датами
+    orders = Order.objects.filter(planned_date__isnull=False)
+    
+    # Генерируем дни для отображения (текущая неделя)
+    today = timezone.now().date()
+    start_of_week = today - timedelta(days=today.weekday())
+    days_of_week = []
+    
+    for i in range(7):
+        day_date = start_of_week + timedelta(days=i)
+        day_orders = orders.filter(planned_date=day_date).order_by('planned_start_time')
+        days_of_week.append({
+            'date': day_date,
+            'orders': day_orders,
+            'is_work_day': str(day_date.weekday() + 1) in planner_settings.work_days.split(',')
+        })
+    
+    context = {
+        'days': days_of_week,
+        'planner_settings': planner_settings,
+        'orders_without_date': Order.objects.filter(planned_date__isnull=True)
+    }
+    return render(request, 'atelier/index.html', context)
+
+def update_order_planning(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            order_id = data.get('order_id')
+            planned_date = data.get('planned_date')
+            planned_start_time = data.get('planned_start_time')
+            
+            order = Order.objects.get(id=order_id)
+            
+            if planned_date:
+                order.planned_date = planned_date
+            if planned_start_time:
+                order.planned_start_time = planned_start_time
+            
+            order.save()
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid method'})
+
+def order_status_list(request):
+    statuses = OrderStatus.objects.all()
+    return render(request, 'atelier/order_status_list.html', {'statuses': statuses})
+
+def order_status_create(request):
+    if request.method == 'POST':
+        form = OrderStatusForm(request.POST)
+        if form.is_valid():
+            # Если устанавливается как статус по умолчанию, снимаем флаг с других
+            if form.cleaned_data['is_default']:
+                OrderStatus.objects.filter(is_default=True).update(is_default=False)
+            form.save()
+            return redirect('order_status_list')
+    else:
+        form = OrderStatusForm()
+    return render(request, 'atelier/order_status_form.html', {'form': form})
+
+def planner_settings(request):
+    settings = PlannerSettings.objects.first()
+    if not settings:
+        settings = PlannerSettings.objects.create()
+    
+    if request.method == 'POST':
+        form = PlannerSettingsForm(request.POST, instance=settings)
+        if form.is_valid():
+            form.save()
+            return redirect('index')
+    else:
+        form = PlannerSettingsForm(instance=settings)
+    
+    return render(request, 'atelier/planner_settings.html', {'form': form})
 
 def customer_list(request):
     customers = Customer.objects.all()
@@ -70,16 +154,14 @@ def order_edit(request, pk):
         form = OrderForm(instance=order)
     return render(request, 'atelier/order_form.html', {'form': form})
 
-@require_POST  # Защита от случайного удаления через GET-запрос
+@require_POST  # Теперь этот декоратор будет работать
 def customer_delete(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     customer.delete()
-    messages.success(request, 'Клиент успешно удалён')
     return redirect('customer_list')
 
 @require_POST
 def order_delete(request, pk):
     order = get_object_or_404(Order, pk=pk)
     order.delete()
-    messages.success(request, 'Заказ успешно удалён')
     return redirect('order_list')

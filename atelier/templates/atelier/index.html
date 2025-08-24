@@ -1,11 +1,200 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Главная страница ателье{% endblock %}
+{% block title %}Планировщик заказов{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+.planner-container {
+    overflow-x: auto;
+}
+.planner-grid {
+    display: grid;
+    grid-template-columns: repeat({{ days|length }}, 1fr);
+    gap: 15px;
+    min-width: 1000px;
+}
+.planner-day {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    min-height: 600px;
+}
+.planner-day.weekend {
+    background: #e9ecef;
+}
+.planner-header {
+    text-align: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #dee2e6;
+}
+.planner-hours {
+    display: grid;
+    gap: 5px;
+}
+.hour-slot {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 5px;
+    min-height: 40px;
+    font-size: 12px;
+}
+.order-card {
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: move;
+    color: white;
+    font-size: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.order-card h6 {
+    margin: 0 0 5px 0;
+    font-size: 12px;
+    font-weight: bold;
+}
+.order-card p {
+    margin: 2px 0;
+    font-size: 11px;
+}
+.unplanned-orders {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<h1>Добро пожаловать в систему учета швейного ателье!</h1>
-<ul>
-    <li><a href="{% url 'customer_list' %}">Список клиентов</a></li>
-    <li><a href="{% url 'order_list' %}">Список заказов</a></li>
-</ul>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Планировщик заказов</h1>
+    <div>
+        <a href="{% url 'planner_settings' %}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-cog"></i> Настройки
+        </a>
+        <a href="{% url 'order_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Новый заказ
+        </a>
+    </div>
+</div>
+
+<div class="planner-container">
+    <div class="planner-grid">
+        {% for day in days %}
+        <div class="planner-day {% if not day.is_work_day %}weekend{% endif %}">
+            <div class="planner-header">
+                <h5>{{ day.date|date:"l" }}</h5>
+                <small>{{ day.date|date:"d.m.Y" }}</small>
+                {% if not day.is_work_day %}
+                <br><span class="badge bg-secondary">Выходной</span>
+                {% endif %}
+            </div>
+            
+            <div class="planner-hours">
+                {% for hour in hours %}
+                <div class="hour-slot" data-hour="{{ hour }}" data-date="{{ day.date|date:'Y-m-d' }}">
+                    <small>{{ hour }}:00</small>
+                    {% for order in day.orders %}
+                    {% if order.planned_start_time and order.planned_start_time.hour == hour %}
+                    <div class="order-card" style="background-color: {{ order.color }};" 
+                         data-order-id="{{ order.id }}" draggable="true">
+                        <h6>{{ order.title }}</h6>
+                        <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
+                        <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
+                        <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
+                        {% if order.status %}
+                        <span class="badge bg-light text-dark">{{ order.status.name }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="unplanned-orders mt-4">
+    <h4>Заказы без даты</h4>
+    <div class="row">
+        {% for order in orders_without_date %}
+        <div class="col-md-3 mb-3">
+            <div class="order-card" style="background-color: {{ order.color }};" 
+                 data-order-id="{{ order.id }}" draggable="true">
+                <h6>{{ order.title }}</h6>
+                <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
+                <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
+                <p><i class="fas fa-clock"></i> {{ order.planned_hours }}ч</p>
+                {% if order.status %}
+                <span class="badge bg-light text-dark">{{ order.status.name }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const orderCards = document.querySelectorAll('.order-card');
+    const hourSlots = document.querySelectorAll('.hour-slot');
+    
+    // Функция для обработки перетаскивания
+    orderCards.forEach(card => {
+        card.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('order-id', this.dataset.orderId);
+        });
+    });
+    
+    hourSlots.forEach(slot => {
+        slot.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = '#e3f2fd';
+        });
+        
+        slot.addEventListener('dragleave', function() {
+            this.style.backgroundColor = '';
+        });
+        
+        slot.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = '';
+            
+            const orderId = e.dataTransfer.getData('order-id');
+            const date = this.dataset.date;
+            const hour = this.dataset.hour;
+            
+            // Отправка данных на сервер
+            fetch('{% url "update_order_planning" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    planned_date: date,
+                    planned_start_time: hour + ':00'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

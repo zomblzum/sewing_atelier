@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Настройки планера{% endblock %}
+
+{% block content %}
+<h1>Настройки планера</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form.hours_per_day.label_tag }}
+                {{ form.hours_per_day }}
+                <div class="form-text">Количество рабочих часов в день</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form.work_days.label_tag }}
+                {{ form.work_days }}
+                <div class="form-text">Номера рабочих дней через запятую (1-ПН, 7-ВС)</div>
+            </div>
+        </div>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a href="{% url 'index' %}" class="btn btn-secondary">Отмена</a>
+</form>
+{% endblock %}

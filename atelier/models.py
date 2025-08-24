@@ -1,5 +1,18 @@
 from django.db import models
 from django.core.validators import RegexValidator
+import random
+
+class OrderStatus(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Название статуса")
+    color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет")
+    is_default = models.BooleanField(default=False, verbose_name="Статус по умолчанию")
+
+    class Meta:
+        verbose_name = "Статус заказа"
+        verbose_name_plural = "Статусы заказов"
+
+    def __str__(self):
+        return self.name
 
 class Customer(models.Model):
     first_name = models.CharField(max_length=100, verbose_name="Имя")
@@ -25,13 +38,6 @@ class Customer(models.Model):
         return f"{self.last_name} {self.first_name} ({self.phone})"
 
 class Order(models.Model):
-    STATUS_CHOICES = [
-        ('new', 'Новый'),
-        ('in_progress', 'В работе'),
-        ('completed', 'Завершен'),
-        ('canceled', 'Отменен'),
-    ]
-
     title = models.CharField(max_length=200, verbose_name="Название заказа")
     customer = models.ForeignKey(
         Customer,
@@ -45,12 +51,17 @@ class Order(models.Model):
         verbose_name="Цена"
     )
     comment = models.TextField(blank=True, null=True, verbose_name="Комментарий")
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='new',
+    status = models.ForeignKey(
+        OrderStatus,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         verbose_name="Статус"
     )
+    planned_date = models.DateField(null=True, blank=True, verbose_name="Планируемая дата")
+    planned_hours = models.PositiveIntegerField(default=1, verbose_name="Планируемые часы")
+    planned_start_time = models.TimeField(null=True, blank=True, verbose_name="Время начала")
+    color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет в планере")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
@@ -60,4 +71,35 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.title} ({self.get_status_display()})"
+        return f"{self.title} ({self.status})"
+
+    def save(self, *args, **kwargs):
+        if not self.status:
+            # Устанавливаем статус по умолчанию
+            default_status = OrderStatus.objects.filter(is_default=True).first()
+            if default_status:
+                self.status = default_status
+        
+        if not self.color or self.color == '#007bff':
+            # Генерируем случайный цвет
+            colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#F9A826', '#6A0572', 
+                     '#AB83A1', '#5C80BC', '#4CB944', '#E2B1B1', '#7D70BA']
+            self.color = random.choice(colors)
+        
+        super().save(*args, **kwargs)
+
+class PlannerSettings(models.Model):
+    hours_per_day = models.PositiveIntegerField(default=8, verbose_name="Рабочих часов в день")
+    work_days = models.CharField(
+        max_length=13, 
+        default='1,2,3,4,5',
+        verbose_name="Рабочие дни (1-ПН,7-ВС)",
+        help_text="Через запятую, где 1 - понедельник, 7 - воскресенье"
+    )
+
+    class Meta:
+        verbose_name = "Настройка планера"
+        verbose_name_plural = "Настройки планера"
+
+    def __str__(self):
+        return f"Настройки планера ({self.hours_per_day} часов/день)"
