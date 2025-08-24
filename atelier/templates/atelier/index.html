@@ -285,155 +285,57 @@
 
 {% block extra_js %}
 <script>
+// Простая проверка загрузки Sortable
+console.log('Sortable available:', typeof Sortable !== 'undefined');
+
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== ДОМ полностью загружен ===');
+    console.log('DOM loaded - starting initialization');
     
-    // Проверяем загрузку Sortable.js
-    const sortableStatus = document.getElementById('sortable-status');
-    if (typeof Sortable !== 'undefined') {
-        console.log('✓ Sortable.js загружен');
-        sortableStatus.innerHTML = 'Загружен ✓';
-        sortableStatus.style.color = 'green';
-    } else {
-        console.error('✗ Sortable.js НЕ загружен');
-        sortableStatus.innerHTML = 'НЕ загружен ✗';
-        sortableStatus.style.color = 'red';
+    // Быстрая проверка
+    if (typeof Sortable === 'undefined') {
+        console.error('Sortable.js NOT LOADED!');
+        document.getElementById('sortable-status').innerHTML = 'НЕ загружен!';
         return;
     }
-
-    // 1. Инициализация незапланированных заказов
-    console.log('Инициализация незапланированных заказов...');
-    const unplannedContainer = document.getElementById('unplanned-orders');
-    if (unplannedContainer && unplannedContainer.children.length > 0) {
-        try {
-            new Sortable(unplannedContainer, {
-                group: {
-                    name: 'orders',
-                    pull: 'clone',
-                    put: false
-                },
+    
+    console.log('Sortable.js loaded successfully');
+    document.getElementById('sortable-status').innerHTML = 'Загружен ✓';
+    
+    // Простая инициализация
+    try {
+        // 1. Незапланированные заказы
+        const unplanned = document.getElementById('unplanned-orders');
+        if (unplanned) {
+            new Sortable(unplanned, {
+                group: { name: 'orders', pull: 'clone', put: false },
                 sort: false,
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                onStart: function(evt) {
-                    console.log('Начало перетаскивания:', evt.item.dataset.orderId);
-                },
                 onEnd: function(evt) {
-                    console.log('Конец перетаскивания');
                     if (evt.to !== evt.from) {
-                        setTimeout(() => {
-                            if (evt.from && evt.item) {
-                                evt.from.appendChild(evt.item);
-                                console.log('Элемент возвращен');
-                            }
-                        }, 100);
+                        setTimeout(() => evt.from.appendChild(evt.item), 100);
                     }
                 }
             });
-            console.log('✓ Незапланированные заказы инициализированы');
-        } catch (e) {
-            console.error('✗ Ошибка инициализации незапланированных:', e);
         }
-    } else {
-        console.warn('Нет незапланированных заказов для инициализации');
-    }
-
-    // 2. Инициализация всех слотов времени
-    console.log('Инициализация слотов времени...');
-    const slotContainers = document.querySelectorAll('.orders-container');
-    console.log('Найдено контейнеров:', slotContainers.length);
-    
-    slotContainers.forEach((container, index) => {
-        try {
+        
+        // 2. Слоты времени
+        document.querySelectorAll('.orders-container').forEach(container => {
             new Sortable(container, {
                 group: 'orders',
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                dragClass: 'sortable-drag',
                 onAdd: function(evt) {
-                    console.log('=== ЭЛЕМЕНТ ДОБАВЛЕН ===');
                     const orderId = evt.item.dataset.orderId;
-                    const slotElement = evt.to.closest('.hour-slot');
-                    if (slotElement) {
-                        const date = slotElement.dataset.date;
-                        const hour = slotElement.dataset.hour;
-                        console.log('Заказ перемещен:', orderId, 'на', date, hour + ':00');
-                        updateOrderPlanning(orderId, date, hour);
+                    const slot = evt.to.closest('.hour-slot');
+                    if (slot) {
+                        console.log('Dropped:', orderId, 'to', slot.dataset.date, slot.dataset.hour);
                     }
-                },
-                onStart: function(evt) {
-                    console.log('Начало перетаскивания из слота');
                 }
             });
-            console.log(`✓ Контейнер ${index + 1} инициализирован:`, container.dataset.slotId);
-        } catch (e) {
-            console.error(`✗ Ошибка инициализации контейнера ${index + 1}:`, e);
-        }
-    });
-
-    // 3. Функция обновления планирования
-    function updateOrderPlanning(orderId, date, hour) {
-        console.log('Отправка данных на сервер...');
+        });
         
-        fetch('{% url "update_order_planning" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({
-                order_id: orderId,
-                planned_date: date,
-                planned_start_time: hour + ':00'
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Сетевой ответ не ok: ' + response.status);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                console.log('✓ Заказ успешно обновлен на сервере');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                throw new Error(data.error || 'Неизвестная ошибка сервера');
-            }
-        })
-        .catch(error => {
-            console.error('✗ Ошибка при обновлении:', error);
-            alert('Ошибка: ' + error.message);
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        });
+        console.log('Sortable initialized successfully');
+        
+    } catch (error) {
+        console.error('Initialization error:', error);
     }
-
-    // 4. Визуальная индикация работы
-    const orderCards = document.querySelectorAll('.order-card');
-    console.log('Найдено карточек заказов:', orderCards.length);
-    
-    orderCards.forEach(card => {
-        card.title = "Перетащите меня!";
-        card.addEventListener('mouseover', function() {
-            this.style.border = '2px solid yellow';
-        });
-        card.addEventListener('mouseout', function() {
-            this.style.border = '2px solid transparent';
-        });
-    });
-
-    console.log('=== ИНИЦИАЛИЗАЦИЯ ЗАВЕРШЕНА ===');
-    console.log('Попробуйте перетащить любой заказ!');
 });
-
-// Дополнительная диагностика
-console.log('Sortable.js доступен:', typeof Sortable !== 'undefined');
-console.log('Колонок planner-column:', document.querySelectorAll('.planner-column').length);
-console.log('Слотов hour-slot:', document.querySelectorAll('.hour-slot').length);
 </script>
 {% endblock %}
