@@ -27,8 +27,8 @@ def register_view(request):
             default_statuses = [
                 {'name': 'Новый', 'color': '#007bff', 'is_default': True},
                 {'name': 'В работе', 'color': '#28a745', 'is_default': False},
-                {'name': 'Завершен', 'color': '#6c757d', 'is_default': False},
-                {'name': 'Отменен', 'color': '#dc3545', 'is_default': False}
+                {'name': 'Завершен', 'color': "#ffffff", 'is_default': False},
+                {'name': 'Отменен', 'color': '#6c757d', 'is_default': False}
             ]
             
             for status_data in default_statuses:
