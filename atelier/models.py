@@ -92,6 +92,12 @@ class Order(models.Model):
     planned_minutes = models.PositiveIntegerField(default=60, verbose_name="Планируемые минуты")
     planned_start_time = models.TimeField(null=True, blank=True, verbose_name="Время начала")
     color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет в планере")
+    order_in_day = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Порядковый номер в дне",
+        default=None
+    )    
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
