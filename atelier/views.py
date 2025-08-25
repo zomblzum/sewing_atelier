@@ -321,3 +321,10 @@ def order_delete(request, pk):
     order = get_object_or_404(Order, pk=pk, user=request.user)
     order.delete()
     return redirect('order_list')
+
+def get_category_price(request, pk):
+    try:
+        category = Category.objects.get(pk=pk)
+        return JsonResponse({'price': float(category.default_price)})
+    except Category.DoesNotExist:
+        return JsonResponse({'error': 'Category not found'}, status=404)
