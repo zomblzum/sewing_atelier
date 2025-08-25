@@ -112,33 +112,28 @@ def index(request):
 @login_required
 @require_POST
 def update_order_planning(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            order_id = data.get('order_id')
-            planned_date = data.get('planned_date')
-            order_in_day = data.get('order_in_day')
-            
-            # Проверяем, что заказ принадлежит текущему пользователю
-            order = get_object_or_404(Order, id=order_id, user=request.user)
-            
-            if planned_date:
-                order.planned_date = planned_date
-            else:
-                order.planned_date = None
-            
-            if order_in_day is not None:
-                order.order_in_day = order_in_day
-            else:
-                order.order_in_day = None
-            
-            order.save()
-            
-            return JsonResponse({'success': True})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-    
-    return JsonResponse({'success': False, 'error': 'Invalid method'})
+    try:
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        planned_date = data.get('planned_date')
+        order_in_day = data.get('order_in_day')
+        
+        order = get_object_or_404(Order, id=order_id, user=request.user)
+        
+        if planned_date:
+            order.planned_date = planned_date
+        else:
+            order.planned_date = None
+
+        if order_in_day is not None:
+            order.order_in_day = order_in_day
+        else:
+            order.order_in_day = None
+        
+        order.save()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 # Order Status views
 @login_required
