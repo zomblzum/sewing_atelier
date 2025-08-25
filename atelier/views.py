@@ -18,24 +18,29 @@ def register_view(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            
-            # Создаем дефолтные настройки для нового пользователя
-            PlannerSettings.objects.create(user=user)
-            
-            # Создаем дефолтные статусы
-            default_statuses = [
-                {'name': 'Новый', 'color': '#007bff', 'is_default': True},
-                {'name': 'В работе', 'color': '#28a745', 'is_default': False},
-                {'name': 'Завершен', 'color': "#ffffff", 'is_default': False},
-                {'name': 'Отменен', 'color': '#6c757d', 'is_default': False}
-            ]
-            
-            for status_data in default_statuses:
-                OrderStatus.objects.create(user=user, **status_data)
-            
-            login(request, user)
-            return redirect('index')
+            try:
+                user = form.save()
+                
+                # Создаем дефолтные настройки
+                PlannerSettings.objects.create(user=user)
+                
+                # Создаем дефолтные статусы
+                default_statuses = [
+                    {'name': 'Новый', 'color': '#007bff', 'is_default': True},
+                    {'name': 'В работе', 'color': '#28a745', 'is_default': False},
+                    {'name': 'Завершен', 'color': "#ffffff", 'is_default': False},
+                    {'name': 'Отменен', 'color': '#6c757d', 'is_default': False}
+                ]
+                
+                for status_data in default_statuses:
+                    OrderStatus.objects.create(user=user, **status_data)
+                
+                login(request, user)
+                return redirect('index')
+                
+            except Exception as e:
+                # Логируем ошибку и показываем пользователю
+                form.add_error(None, f'Ошибка при создании пользователя: {str(e)}')
     else:
         form = RegisterForm()
     
@@ -75,7 +80,10 @@ def index(request):
     start_of_week = today - timedelta(days=today.weekday())
     days_of_week = []
     
-    work_days = list(map(int, planner_settings.work_days.split(',')))
+    if planner_settings.work_days.strip():
+        work_days = list(map(int, planner_settings.work_days.split(',')))
+    else:
+        work_days = [1, 2, 3, 4, 5]  # Значение по умолчанию
     
     for i in range(7):
         day_date = start_of_week + timedelta(days=i)
@@ -322,51 +330,44 @@ def order_delete(request, pk):
     order.delete()
     return redirect('order_list')
 
+@login_required
 def get_category_price(request, pk):
     try:
-        category = Category.objects.get(pk=pk)
+        category = Category.objects.get(pk=pk, user=request.user)
         return JsonResponse({'price': float(category.default_price)})
     except Category.DoesNotExist:
         return JsonResponse({'error': 'Category not found'}, status=404)
     
+@login_required
 @require_POST
 def check_day_limit(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            order_id = data.get('order_id')
-            planned_date = data.get('planned_date')
+    try:
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        planned_date = data.get('planned_date')
+        
+        # Добавляем проверку пользователя
+        order = get_object_or_404(Order, id=order_id, user=request.user)
+        planner_settings = get_object_or_404(PlannerSettings, user=request.user)
+        
+        if planned_date:
+            day_orders = Order.objects.filter(planned_date=planned_date, user=request.user)
+            total_minutes = sum(o.planned_minutes for o in day_orders if o.planned_minutes)
             
-            order = Order.objects.get(id=order_id)
-            planner_settings = PlannerSettings.objects.first()
+            if order.planned_date == planned_date:
+                total_minutes -= order.planned_minutes or 0
             
-            if not planner_settings:
-                planner_settings = PlannerSettings.objects.create()
+            total_minutes += order.planned_minutes or 0
             
-            # Проверяем лимит
-            if planned_date:
-                day_orders = Order.objects.filter(planned_date=planned_date)
-                total_minutes = sum(o.planned_minutes for o in day_orders)
-                
-                # Если заказ уже был в этом дне, вычитаем его время
-                if order.planned_date == planned_date:
-                    total_minutes -= order.planned_minutes
-                
-                # Добавляем время текущего заказа
-                total_minutes += order.planned_minutes
-                
-                # Проверяем лимит
-                day_minutes_limit = planner_settings.hours_per_day * 60
-                can_add = total_minutes <= day_minutes_limit
-                
-                return JsonResponse({
-                    'can_add': can_add,
-                    'total_minutes': total_minutes,
-                    'limit': day_minutes_limit
-                })
+            day_minutes_limit = planner_settings.hours_per_day * 60
+            can_add = total_minutes <= day_minutes_limit
             
-            return JsonResponse({'can_add': True})
-        except Exception as e:
-            return JsonResponse({'can_add': True, 'error': str(e)})
-    
-    return JsonResponse({'can_add': True})        
+            return JsonResponse({
+                'can_add': can_add,
+                'total_minutes': total_minutes,
+                'limit': day_minutes_limit
+            })
+        
+        return JsonResponse({'can_add': True})
+    except Exception as e:
+        return JsonResponse({'can_add': True, 'error': str(e)})
