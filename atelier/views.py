@@ -328,3 +328,45 @@ def get_category_price(request, pk):
         return JsonResponse({'price': float(category.default_price)})
     except Category.DoesNotExist:
         return JsonResponse({'error': 'Category not found'}, status=404)
+    
+@require_POST
+def check_day_limit(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            order_id = data.get('order_id')
+            planned_date = data.get('planned_date')
+            
+            order = Order.objects.get(id=order_id)
+            planner_settings = PlannerSettings.objects.first()
+            
+            if not planner_settings:
+                planner_settings = PlannerSettings.objects.create()
+            
+            # Проверяем лимит
+            if planned_date:
+                day_orders = Order.objects.filter(planned_date=planned_date)
+                total_minutes = sum(o.planned_minutes for o in day_orders)
+                
+                # Если заказ уже был в этом дне, вычитаем его время
+                if order.planned_date == planned_date:
+                    total_minutes -= order.planned_minutes
+                
+                # Добавляем время текущего заказа
+                total_minutes += order.planned_minutes
+                
+                # Проверяем лимит
+                day_minutes_limit = planner_settings.hours_per_day * 60
+                can_add = total_minutes <= day_minutes_limit
+                
+                return JsonResponse({
+                    'can_add': can_add,
+                    'total_minutes': total_minutes,
+                    'limit': day_minutes_limit
+                })
+            
+            return JsonResponse({'can_add': True})
+        except Exception as e:
+            return JsonResponse({'can_add': True, 'error': str(e)})
+    
+    return JsonResponse({'can_add': True})        
