@@ -1,7 +1,12 @@
 from django.urls import path
 from . import views
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
+    path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+
     path('', views.index, name='index'),
     path('update_order_planning/', views.update_order_planning, name='update_order_planning'),
     path('order_statuses/', views.order_status_list, name='order_status_list'),

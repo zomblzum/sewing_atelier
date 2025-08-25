@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Швейное ателье - {% block title %}{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>{% block title %}Планировщик заказов{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧵</text></svg>">
     <style>
         .btn-group-sm .btn {
@@ -22,24 +23,63 @@
         .btn i {
             margin-right: 0.25rem;
         }
-    </style>
+    </style>    
     {% block extra_head %}{% endblock %}
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="/">Швейное ателье</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+            <a class="navbar-brand" href="{% url 'index' %}">
+                <i class="fas fa-calendar-alt"></i> Планировщик заказов
+            </a>
+            
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'customer_list' %}">Клиенты</a>
+                        <a class="nav-link" href="{% url 'index' %}">Главная</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'order_list' %}">Заказы</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'customer_list' %}">Клиенты</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'planner_settings' %}">Настройки</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'planner_settings' %}">
+                                <i class="fas fa-cog"></i> Настройки
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="fas fa-sign-out-alt"></i> Выйти
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Войти</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'register' %}">Регистрация</a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -49,23 +89,8 @@
         {% block content %}{% endblock %}
     </div>
 
-    <!-- Bootstrap подключается в конце -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        console.log('Planner debug:');
-        console.log('Columns:', document.querySelectorAll('.planner-column').length);
-        console.log('Sortable loaded:', typeof Sortable !== 'undefined');
-        
-        // Дополнительная проверка после загрузки DOM
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM fully loaded');
-            console.log('Planner columns found:', document.querySelectorAll('.planner-column').length);
-            console.log('Hour slots found:', document.querySelectorAll('.hour-slot').length);
-            console.log('Order cards found:', document.querySelectorAll('.order-card').length);
-        });
-    </script>    
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

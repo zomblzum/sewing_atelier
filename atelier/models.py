@@ -1,8 +1,10 @@
 from django.db import models
 from django.core.validators import RegexValidator
 import random
+from django.contrib.auth.models import User
 
 class OrderStatus(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     name = models.CharField(max_length=100, verbose_name="Название статуса")
     color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет")
     is_default = models.BooleanField(default=False, verbose_name="Статус по умолчанию")
@@ -10,27 +12,13 @@ class OrderStatus(models.Model):
     class Meta:
         verbose_name = "Статус заказа"
         verbose_name_plural = "Статусы заказов"
+        unique_together = ['user', 'name']  # Уникальное название для каждого пользователя
 
     def __str__(self):
-        return self.name
-
-class Category(models.Model):
-    name = models.CharField(max_length=100, verbose_name="Название категории")
-    default_price = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name="Цена по умолчанию"
-    )
-    color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет")
-    
-    class Meta:
-        verbose_name = "Категория"
-        verbose_name_plural = "Категории"
-    
-    def __str__(self):
-        return self.name    
+        return f"{self.name} ({self.user.username})"
 
 class Customer(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     first_name = models.CharField(max_length=100, verbose_name="Имя")
     last_name = models.CharField(max_length=100, verbose_name="Фамилия")
     phone_regex = RegexValidator(
@@ -51,15 +39,41 @@ class Customer(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.last_name} {self.first_name} ({self.phone})"
+        return f"{self.last_name} {self.first_name} ({self.phone}) - {self.user.username}"
+
+class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    name = models.CharField(max_length=100, verbose_name="Название категории")
+    default_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Цена по умолчанию"
+    )
+    color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет")
+    
+    class Meta:
+        verbose_name = "Категория"
+        verbose_name_plural = "Категории"
+        unique_together = ['user', 'name']  # Уникальное название для каждого пользователя
+    
+    def __str__(self):
+        return f"{self.name} ({self.user.username})"
 
 class Order(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     title = models.CharField(max_length=200, verbose_name="Название заказа")
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
         related_name='orders',
         verbose_name="Заказчик"
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Категория"
     )
     price = models.DecimalField(
         max_digits=10,
@@ -74,19 +88,12 @@ class Order(models.Model):
         blank=True,
         verbose_name="Статус"
     )
-    category = models.ForeignKey(
-        Category,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Категория"
-    )    
     planned_date = models.DateField(null=True, blank=True, verbose_name="Планируемая дата")
+    planned_minutes = models.PositiveIntegerField(default=60, verbose_name="Планируемые минуты")
+    planned_start_time = models.TimeField(null=True, blank=True, verbose_name="Время начала")
     color = models.CharField(max_length=7, default='#007bff', verbose_name="Цвет в планере")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
-    planned_minutes = models.PositiveIntegerField(default=60, verbose_name="Планируемые минуты")
-    order_in_day = models.PositiveIntegerField(null=True, blank=True, verbose_name="Порядок в дне")
 
     class Meta:
         verbose_name = "Заказ"
@@ -94,19 +101,12 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.title} ({self.status})"
+        return f"{self.title} ({self.user.username})"
 
     def save(self, *args, **kwargs):
-        # Если указана категория и цена не была изменена вручную, устанавливаем цену из категории
-        if self.category and not self._state.adding:
-            original = Order.objects.get(pk=self.pk)
-            if original.price == original.category.default_price if original.category else 0:
-                self.price = self.category.default_price
-        elif self.category and self._state.adding:
-            self.price = self.category.default_price
-        
         if not self.status:
-            default_status = OrderStatus.objects.filter(is_default=True).first()
+            # Устанавливаем статус по умолчанию для текущего пользователя
+            default_status = OrderStatus.objects.filter(user=self.user, is_default=True).first()
             if default_status:
                 self.status = default_status
         
@@ -118,6 +118,7 @@ class Order(models.Model):
         super().save(*args, **kwargs)
 
 class PlannerSettings(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     hours_per_day = models.PositiveIntegerField(default=8, verbose_name="Рабочих часов в день")
     work_days = models.CharField(
         max_length=13, 
@@ -131,4 +132,4 @@ class PlannerSettings(models.Model):
         verbose_name_plural = "Настройки планера"
 
     def __str__(self):
-        return f"Настройки планера ({self.hours_per_day} часов/день)"
+        return f"Настройки планера ({self.user.username})"
