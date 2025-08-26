@@ -258,6 +258,44 @@
     pointer-events: auto; /* Но элементы внутри контента кликабельны */
 }
 
+.week-navigation {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+}
+
+.nav-btn-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.nav-btn-group .btn {
+    white-space: nowrap;
+}
+
+.week-info {
+    min-width: 200px;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .week-navigation {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .nav-btn-group {
+        justify-content: center;
+    }
+    
+    .nav-btn-group .btn {
+        font-size: 12px;
+        padding: 5px 8px;
+    }
+}
+
 </style>
 {% endblock %}
 
@@ -276,29 +314,51 @@
 
 <!-- Навигация по неделям -->
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <a href="?weeks=remove" class="btn btn-outline-secondary" data-action="remove-week">
-            <i class="fas fa-minus"></i> Убрать неделю
+    <!-- Левая часть - Прошлые недели -->
+    <div class="d-flex align-items-center gap-2">
+        <a href="?action=add_left" class="btn btn-outline-primary btn-sm" data-action="add-left" title="Добавить прошлую неделю">
+            <i class="fas fa-arrow-left"></i> Добавить прошлую
+        </a>
+        <a href="?action=remove_left" class="btn btn-outline-danger btn-sm" data-action="remove-left" title="Убрать прошлую неделю">
+            <i class="fas fa-times"></i> Убрать
         </a>
     </div>
     
+    <!-- Центр - Текущий вид -->
     <div class="text-center">
-        <h4>
-            <a href="?weeks=1" class="btn btn-sm btn-outline-secondary mx-2" data-action="current-week">
-                Текущая неделя
-            </a>
-            Недели: {{ weeks }}
+        <h4 class="mb-0">
+            <span class="badge bg-secondary">
+                <i class="fas fa-calendar"></i> 
+                {% if weeks > 1 %}
+                    {{ weeks }} недели
+                {% else %}
+                    Текущая неделя
+                {% endif %}
+            </span>
         </h4>
+        <small class="text-muted">
+            {% if days.0.date and days|last.date %}
+                {{ days.0.date|date:"d.m.Y" }} - {{ days|last.date|date:"d.m.Y" }}
+            {% endif %}
+        </small>
     </div>
     
-    <div class="d-flex gap-2">
-        <a href="?direction=left" class="btn btn-outline-primary" data-action="add-week-left">
-            <i class="fas fa-arrow-left"></i> Прошлая
+    <!-- Правая часть - Будущие недели -->
+    <div class="d-flex align-items-center gap-2">
+        <a href="?action=remove_right" class="btn btn-outline-danger btn-sm" data-action="remove-right" title="Убрать будущую неделю">
+            Убрать <i class="fas fa-times"></i>
         </a>
-        <a href="?direction=right" class="btn btn-outline-primary" data-action="add-week-right">
-            Будущая <i class="fas fa-arrow-right"></i>
+        <a href="?action=add_right" class="btn btn-outline-primary btn-sm" data-action="add-right" title="Добавить будущую неделю">
+            Добавить будущую <i class="fas fa-arrow-right"></i>
         </a>
     </div>
+</div>
+
+<!-- Кнопка сброса -->
+<div class="text-center mb-3">
+    <a href="?action=reset" class="btn btn-outline-secondary btn-sm" data-action="reset" title="Вернуться к текущей неделе">
+        <i class="fas fa-sync"></i> Текущая неделя
+    </a>
 </div>
 
 <div class="alert alert-info">
@@ -449,45 +509,6 @@ function initializePlanner() {
     console.log('Планировщик полностью переинициализирован');
 }
 
-// Настройка навигации по неделям
-function setupWeekNavigation() {
-    // Кнопка "Убрать неделю"
-    const removeWeekBtn = document.querySelector('[data-action="remove-week"]');
-    if (removeWeekBtn) {
-        removeWeekBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            loadMoreWeeks('remove');
-        });
-    }
-    
-    // Кнопка "Прошлая неделя"
-    const addLeftBtn = document.querySelector('[data-action="add-week-left"]');
-    if (addLeftBtn) {
-        addLeftBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            loadMoreWeeks('left');
-        });
-    }
-    
-    // Кнопка "Будущая неделя"
-    const addRightBtn = document.querySelector('[data-action="add-week-right"]');
-    if (addRightBtn) {
-        addRightBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            loadMoreWeeks('right');
-        });
-    }
-    
-    // Кнопка "Текущая неделя"
-    const currentWeekBtn = document.querySelector('[data-action="current-week"]');
-    if (currentWeekBtn) {
-        currentWeekBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            loadCurrentWeek();
-        });
-    }
-}
-
 // Функция загрузки дополнительных недель
 function loadMoreWeeks(direction) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -521,6 +542,82 @@ function loadMoreWeeks(direction) {
     
     // Обновляем страницу с новыми параметрами
     window.location.href = `?start_date=${newStartDate}&weeks=${currentWeeks}`;
+}
+
+function manageWeeks(action) {
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentWeeks = parseInt(urlParams.get('weeks') || 1);
+    let startDate = urlParams.get('start_date');
+    let newStartDate = startDate;
+    
+    // Если start_date не указан, используем текущую дату
+    if (!startDate) {
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+        startDate = startOfWeek.toISOString().split('T')[0];
+        newStartDate = startDate;
+    }
+    
+    switch (action) {
+        case 'add_left':
+            // Добавляем неделю слева - смещаем start_date на 7 дней назад
+            const currentStartDate = new Date(startDate);
+            currentStartDate.setDate(currentStartDate.getDate() - 7);
+            newStartDate = currentStartDate.toISOString().split('T')[0];
+            currentWeeks += 1;
+            break;
+            
+        case 'add_right':
+            // Добавляем неделю справа
+            currentWeeks += 1;
+            break;
+            
+        case 'remove_left':
+            // Убираем неделю слева - смещаем start_date на 7 дней вперед
+            if (currentWeeks > 1) {
+                const currentStartDate = new Date(startDate);
+                currentStartDate.setDate(currentStartDate.getDate() + 7);
+                newStartDate = currentStartDate.toISOString().split('T')[0];
+                currentWeeks -= 1;
+            }
+            break;
+            
+        case 'remove_right':
+            // Убираем неделю справа
+            if (currentWeeks > 1) {
+                currentWeeks -= 1;
+            }
+            break;
+            
+        case 'reset':
+            // Сброс к текущей неделе
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+            newStartDate = startOfWeek.toISOString().split('T')[0];
+            currentWeeks = 1;
+            break;
+            
+        default:
+            return;
+    }
+    
+    // Обновляем страницу с новыми параметрами
+    window.location.href = `?start_date=${newStartDate}&weeks=${currentWeeks}`;
+}
+
+// Настройка навигации
+function setupWeekNavigation() {
+    // Обработчики для всех кнопок
+    const buttons = document.querySelectorAll('[data-action]');
+    buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const action = this.getAttribute('data-action');
+            manageWeeks(action);
+        });
+    });
 }
 
 // Функция загрузки текущей недели

@@ -112,7 +112,9 @@ def index(request):
         'orders_without_date': Order.objects.filter(user=request.user, planned_date__isnull=True),
         'total_day_minutes': planner_settings.hours_per_day * 60,
         'start_date': start_date,
-        'weeks': weeks_to_show
+        'weeks': weeks_to_show,
+        'start_date': start_date,
+        'end_date': start_date + timedelta(days=7 * weeks_to_show - 1),
     }
     return render(request, 'atelier/index.html', context)
 
