@@ -20,25 +20,28 @@
             <div class="orders-container" id="orders-{{ day.date|date:'Y-m-d' }}"
                  data-date="{{ day.date|date:'Y-m-d' }}">
                 {% for order in day.orders %}
-                <div class="order-brick" 
-                    data-order-id="{{ order.id }}"
-                    data-minutes="{{ order.planned_minutes }}"
-                    style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;"
-                    
-                    <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
-                        <i class="fas fa-external-link-alt"></i>
-                    </a>
-                    
-                    <h6>{{ order.title|truncatechars:20 }}</h6>
-                    <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
-                    <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
-                    
-                    {% if order.status %}
-                    <span class="badge status-badge bg-light text-dark">
-                        {{ order.status.name }}
-                    </span>
-                    {% endif %}
-                </div>
+                    <div class="order-brick" 
+                        data-order-id="{{ order.id }}"
+                        data-minutes="{{ order.planned_minutes }}"
+                        style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;">
+                        
+                        <!-- Ссылка на карточку заказа -->
+                        <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                        
+                        <div class="order-content">
+                            <h6>{{ order.title|truncatechars:20 }}</h6>
+                            <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
+                            <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
+                            
+                            {% if order.status %}
+                            <span class="badge status-badge bg-light text-dark">
+                                {{ order.status.name }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
                 {% empty %}
                 <div class="empty-column-message">
                     Нет заказов
@@ -64,22 +67,24 @@
         <div class="order-brick" 
             data-order-id="{{ order.id }}"
             data-minutes="{{ order.planned_minutes }}"
-            style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 100 %}px;"
+            style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;">
             
+            <!-- Ссылка на карточку заказа -->
             <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
                 <i class="fas fa-external-link-alt"></i>
             </a>
             
-            <h6>{{ order.title|truncatechars:20 }}</h6>
-            <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
-            <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
-            <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
-            
-            {% if order.status %}
-            <span class="badge status-badge bg-light text-dark">
-                {{ order.status.name }}
-            </span>
-            {% endif %}
+            <div class="order-content">
+                <h6>{{ order.title|truncatechars:20 }}</h6>
+                <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
+                <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
+                
+                {% if order.status %}
+                <span class="badge status-badge bg-light text-dark">
+                    {{ order.status.name }}
+                </span>
+                {% endif %}
+            </div>
         </div>
         {% empty %}
         <p class="text-muted">Нет заказов без даты</p>
