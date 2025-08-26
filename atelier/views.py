@@ -134,16 +134,19 @@ def update_order_planning(request):
         else:
             order.planned_date = None
 
-        if order_in_day is not None:
-            order.order_in_day = order_in_day
+        # Исправляем обработку order_in_day
+        if order_in_day is not None and order_in_day != '':
+            try:
+                order.order_in_day = int(order_in_day)
+            except (ValueError, TypeError):
+                order.order_in_day = None
         else:
             order.order_in_day = None
         
         order.save()
         
-        # Если это AJAX-запрос, возвращаем HTML планера
+        # Если это AJAX-запрос, возвращаем HTML всего планера
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            # Получаем параметры из запроса
             start_date_str = data.get('start_date')
             weeks = int(data.get('weeks', 1))
             
@@ -152,7 +155,6 @@ def update_order_planning(request):
             else:
                 start_date = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
             
-            # Рендерим только часть с планером
             planner_settings = PlannerSettings.objects.get(user=request.user)
             orders = Order.objects.filter(user=request.user, planned_date__isnull=False).order_by('planned_date', 'order_in_day')
             
@@ -179,13 +181,15 @@ def update_order_planning(request):
                     'day_percentage': min(day_percentage, 100)
                 })
             
-            html = render_to_string('atelier/planner_partial.html', {
+            # Рендерим весь индексный шаблон, а не только частичный
+            html = render_to_string('atelier/index.html', {
                 'days': days_of_week,
                 'planner_settings': planner_settings,
+                'orders_without_date': Order.objects.filter(user=request.user, planned_date__isnull=True),
                 'total_day_minutes': planner_settings.hours_per_day * 60,
                 'start_date': start_date,
                 'weeks': weeks
-            })
+            }, request=request)
             
             return JsonResponse({'success': True, 'html': html})
         

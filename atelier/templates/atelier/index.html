@@ -647,7 +647,7 @@ function updateOrderPlanning(orderId, date, orderInDay) {
         body: JSON.stringify({
             order_id: orderId,
             planned_date: date,
-            order_in_day: orderInDayValue,  // Исправлено
+            order_in_day: orderInDayValue,
             start_date: startDate,
             weeks: weeks
         })
@@ -656,9 +656,16 @@ function updateOrderPlanning(orderId, date, orderInDay) {
     .then(data => {
         if (data.success) {
             if (data.html) {
-                document.getElementById('planner-container').innerHTML = data.html;
-                initializePlanner();
+                // Заменяем ВЕСЬ контент страницы
+                document.documentElement.innerHTML = data.html;
+                // Переинициализируем планер после замены контента
+                setTimeout(() => {
+                    if (typeof initializePlanner === 'function') {
+                        initializePlanner();
+                    }
+                }, 100);
             } else {
+                // Fallback: перезагрузка страницы
                 setTimeout(() => {
                     window.location.reload();
                 }, 300);
