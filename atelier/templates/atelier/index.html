@@ -82,6 +82,10 @@
     transition: all 0.2s ease;
     width: 100%;
     box-sizing: border-box;
+    min-height: 80px; /* Минимальная высота */
+    position: relative;
+    display: block; /* Важно для кликабельности */
+    text-decoration: none; /* Убираем подчеркивание */
 }
 
 .order-brick:active {
@@ -92,6 +96,8 @@
 .order-brick:hover {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    text-decoration: none;
+    color: white;
 }
 
 .order-brick h6 {
@@ -178,20 +184,22 @@
     position: absolute;
     top: 5px;
     right: 5px;
-    color: white;
+    color: white !important;
     opacity: 0.6;
     font-size: 10px;
     padding: 3px;
     border-radius: 3px;
     background: rgba(0, 0, 0, 0.3);
     transition: opacity 0.2s ease;
-    z-index: 10;
+    z-index: 100; /* Повышаем z-index */
+    text-decoration: none;
 }
 
 .order-link:hover {
     opacity: 1;
-    color: white;
+    color: white !important;
     background: rgba(0, 0, 0, 0.5);
+    text-decoration: none;
 }
 
 .order-brick {
@@ -225,6 +233,29 @@
     z-index: 100;
     padding: 10px;
     border-bottom: 1px solid #ddd;
+}
+
+.order-brick a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Делаем всю карточку кликабельной для drag&drop, но ссылка поверх */
+.order-brick {
+    pointer-events: auto;
+}
+
+.order-link {
+    pointer-events: auto; /* Ссылка кликабельна */
+}
+
+/* Для контента внутри карточки */
+.order-content {
+    pointer-events: none; /* Контент не перехватывает клики */
+}
+
+.order-content * {
+    pointer-events: auto; /* Но элементы внутри контента кликабельны */
 }
 
 </style>
