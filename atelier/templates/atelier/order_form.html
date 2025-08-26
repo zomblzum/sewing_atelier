@@ -121,14 +121,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="card-body">
                     <div class="mb-3">
                         <label for="{{ form.planned_date.id_for_label }}" class="form-label">Планируемая дата</label>
-                        {{ form.planned_date }}
+                        <input type="date" 
+                            name="{{ form.planned_date.name }}" 
+                            id="{{ form.planned_date.id_for_label }}" 
+                            class="form-control"
+                            value="{% if form.planned_date.value %}{{ form.planned_date.value|date:'Y-m-d' }}{% elif form.instance.planned_date %}{{ form.instance.planned_date|date:'Y-m-d' }}{% endif %}">
                         {% if form.planned_date.errors %}
                         <div class="text-danger">{{ form.planned_date.errors }}</div>
-                        {% endif %}
-                        {% if form.instance.planned_date %}
-                        <div class="form-text">
-                            Текущее значение: {{ form.instance.planned_date|date:"d.m.Y" }}
-                        </div>
                         {% endif %}
                     </div>
                     
