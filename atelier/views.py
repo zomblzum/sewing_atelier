@@ -73,11 +73,23 @@ def index(request):
     # Получаем начальную дату из параметра или используем текущую
     start_date_str = request.GET.get('start_date')
     if start_date_str:
-        start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        try:
+            start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            # Если передан некорректный формат даты, используем текущую неделю
+            start_date = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
     else:
         start_date = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
     
-    weeks_to_show = int(request.GET.get('weeks', 1))  # Количество недель для показа
+    # Получаем количество недель или используем 1 по умолчанию
+    weeks_str = request.GET.get('weeks')
+    if weeks_str:
+        try:
+            weeks_to_show = max(1, int(weeks_str))  # Минимум 1 неделя
+        except ValueError:
+            weeks_to_show = 1
+    else:
+        weeks_to_show = 1
     
     planner_settings, created = PlannerSettings.objects.get_or_create(user=request.user)
     orders = Order.objects.filter(user=request.user, planned_date__isnull=False).order_by('planned_date', 'order_in_day')
@@ -113,7 +125,6 @@ def index(request):
         'total_day_minutes': planner_settings.hours_per_day * 60,
         'start_date': start_date,
         'weeks': weeks_to_show,
-        'start_date': start_date,
         'end_date': start_date + timedelta(days=7 * weeks_to_show - 1),
     }
     return render(request, 'atelier/index.html', context)
@@ -126,6 +137,24 @@ def update_order_planning(request):
         order_id = data.get('order_id')
         planned_date = data.get('planned_date')
         order_in_day = data.get('order_in_day')
+        
+        # Получаем параметры с проверкой на None
+        start_date_str = data.get('start_date')
+        weeks_str = data.get('weeks', '1')
+        
+        # Обработка параметров как в index view
+        if start_date_str:
+            try:
+                start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                start_date = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
+        else:
+            start_date = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
+        
+        try:
+            weeks = max(1, int(weeks_str))
+        except (ValueError, TypeError):
+            weeks = 1
         
         order = get_object_or_404(Order, id=order_id, user=request.user)
         
@@ -147,14 +176,6 @@ def update_order_planning(request):
         
         # Если это AJAX-запрос, возвращаем HTML всего планера
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            start_date_str = data.get('start_date')
-            weeks = int(data.get('weeks', 1))
-            
-            if start_date_str:
-                start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            else:
-                start_date = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
-            
             planner_settings = PlannerSettings.objects.get(user=request.user)
             orders = Order.objects.filter(user=request.user, planned_date__isnull=False).order_by('planned_date', 'order_in_day')
             
@@ -181,7 +202,6 @@ def update_order_planning(request):
                     'day_percentage': min(day_percentage, 100)
                 })
             
-            # Рендерим весь индексный шаблон, а не только частичный
             html = render_to_string('atelier/index.html', {
                 'days': days_of_week,
                 'planner_settings': planner_settings,

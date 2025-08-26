@@ -552,8 +552,17 @@ function loadMoreWeeks(direction) {
 
 function manageWeeks(action) {
     const urlParams = new URLSearchParams(window.location.search);
-    let currentWeeks = parseInt(urlParams.get('weeks') || 1);
+    let currentWeeks = parseInt(urlParams.get('weeks') || '1');
     let startDate = urlParams.get('start_date');
+    
+    // Безопасная обработка даты
+    if (!startDate) {
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+        startDate = startOfWeek.toISOString().split('T')[0];
+    }
+    
     let newStartDate = startDate;
     
     // Если start_date не указан, используем текущую дату
