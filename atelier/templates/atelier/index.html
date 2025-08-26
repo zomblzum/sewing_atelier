@@ -316,10 +316,10 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <!-- Левая часть - Прошлые недели -->
     <div class="d-flex align-items-center gap-2">
-        <a href="?action=add_left" class="btn btn-outline-primary btn-sm" data-action="add-left" title="Добавить прошлую неделю">
+        <a href="#" class="btn btn-outline-primary btn-sm" data-action="add_left" title="Добавить прошлую неделю">
             <i class="fas fa-arrow-left"></i> Добавить прошлую
         </a>
-        <a href="?action=remove_left" class="btn btn-outline-danger btn-sm" data-action="remove-left" title="Убрать прошлую неделю">
+        <a href="#" class="btn btn-outline-danger btn-sm" data-action="remove_left" title="Убрать прошлую неделю">
             <i class="fas fa-times"></i> Убрать
         </a>
     </div>
@@ -343,10 +343,10 @@
     
     <!-- Правая часть - Будущие недели -->
     <div class="d-flex align-items-center gap-2">
-        <a href="?action=remove_right" class="btn btn-outline-danger btn-sm" data-action="remove-right" title="Убрать будущую неделю">
+        <a href="#" class="btn btn-outline-danger btn-sm" data-action="remove_right" title="Убрать будущую неделю">
             Убрать <i class="fas fa-times"></i>
         </a>
-        <a href="?action=add_right" class="btn btn-outline-primary btn-sm" data-action="add-right" title="Добавить будущую неделю">
+        <a href="#" class="btn btn-outline-primary btn-sm" data-action="add_right" title="Добавить будущую неделю">
             Добавить будущую <i class="fas fa-arrow-right"></i>
         </a>
     </div>
@@ -354,7 +354,7 @@
 
 <!-- Кнопка сброса -->
 <div class="text-center mb-3">
-    <a href="?action=reset" class="btn btn-outline-secondary btn-sm" data-action="reset" title="Вернуться к текущей неделе">
+    <a href="#" class="btn btn-outline-secondary btn-sm" data-action="reset" title="Вернуться к текущей неделе">
         <i class="fas fa-sync"></i> Текущая неделя
     </a>
 </div>
@@ -374,6 +374,17 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Инициализация планера...');
     initializePlanner();
+});
+
+// Также добавьте обработчик для кнопок вне Sortable
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.order-link')) {
+        e.stopPropagation();
+    } else if (e.target.closest('[data-action]')) {
+        e.preventDefault();
+        const action = e.target.closest('[data-action]').getAttribute('data-action');
+        manageWeeks(action);
+    }
 });
 
 // Основная функция инициализации планера
@@ -500,9 +511,6 @@ function initializePlanner() {
             console.error('Ошибка инициализации колонки:', e);
         }
     });
-
-    // 3. Добавляем обработчики для кнопок навигации
-    setupWeekNavigation();
     
     console.log('Планировщик полностью переинициализирован');
 }
@@ -605,19 +613,6 @@ function manageWeeks(action) {
     window.location.href = `?start_date=${newStartDate}&weeks=${currentWeeks}`;
 }
 
-// Настройка навигации
-function setupWeekNavigation() {
-    // Обработчики для всех кнопок
-    const buttons = document.querySelectorAll('[data-action]');
-    buttons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const action = this.getAttribute('data-action');
-            manageWeeks(action);
-        });
-    });
-}
-
 // Функция загрузки текущей недели
 function loadCurrentWeek() {
     const today = new Date();
@@ -634,6 +629,14 @@ function updateOrderPlanning(orderId, date, orderInDay) {
     const startDate = urlParams.get('start_date');
     const weeks = urlParams.get('weeks');
     
+    // Преобразуем orderInDay в число или null
+    let orderInDayValue = orderInDay;
+    if (orderInDay === null || orderInDay === undefined || orderInDay === '') {
+        orderInDayValue = null;
+    } else {
+        orderInDayValue = parseInt(orderInDay);
+    }
+    
     fetch('{% url "update_order_planning" %}', {
         method: 'POST',
         headers: {
@@ -644,7 +647,7 @@ function updateOrderPlanning(orderId, date, orderInDay) {
         body: JSON.stringify({
             order_id: orderId,
             planned_date: date,
-            order_in_day: orderInDay,
+            order_in_day: orderInDayValue,  // Исправлено
             start_date: startDate,
             weeks: weeks
         })
@@ -653,11 +656,9 @@ function updateOrderPlanning(orderId, date, orderInDay) {
     .then(data => {
         if (data.success) {
             if (data.html) {
-                // AJAX обновление
                 document.getElementById('planner-container').innerHTML = data.html;
                 initializePlanner();
             } else {
-                // Fallback: перезагрузка
                 setTimeout(() => {
                     window.location.reload();
                 }, 300);
@@ -684,22 +685,6 @@ function updateUnplannedOrderOrder(container) {
     console.log('Обновление порядка в "без даты"');
     // Здесь можно добавить логику для сохранения порядка
 }
-
-// Обработчик кнопок навигации (альтернативный вариант)
-document.addEventListener('click', function(e) {
-    if (e.target.closest('.order-link')) {
-        e.stopPropagation();
-    } else if (e.target.closest('[data-action="add-week"]')) {
-        e.preventDefault();
-        loadMoreWeeks('add');
-    } else if (e.target.closest('[data-action="remove-week"]')) {
-        e.preventDefault();
-        loadMoreWeeks('remove');
-    } else if (e.target.closest('[data-action="current-week"]')) {
-        e.preventDefault();
-        loadCurrentWeek();
-    }
-});
 
 console.log('JavaScript планера загружен');
 </script>
