@@ -384,7 +384,7 @@ def order_create(request):
             order = form.save(commit=False)
             order.user = request.user
             order.save()
-            return redirect('index', pk=order.pk)
+            return redirect('index')
     else:
         form = OrderForm(user=request.user)
     return render(request, 'atelier/order_form.html', {'form': form})
@@ -396,7 +396,7 @@ def order_edit(request, pk):
         form = OrderForm(request.POST, instance=order, user=request.user)
         if form.is_valid():
             order = form.save()
-            return redirect('index', pk=order.pk)
+            return redirect('index')
     else:
         form = OrderForm(instance=order, user=request.user)
     return render(request, 'atelier/order_form.html', {'form': form})
