@@ -1,0 +1,88 @@
+<div class="planner-container">
+    <div class="planner-grid" id="planner-grid">
+        {% for day in days %}
+        <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
+             data-date="{{ day.date|date:'Y-m-d' }}"
+             data-total-minutes="{{ total_day_minutes }}">
+            
+            <div class="planner-header">
+                <h5>{{ day.date|date:"l" }}</h5>
+                <small>{{ day.date|date:"d.m.Y" }}</small>
+                <div class="day-utilization"></div>
+                {% if not day.is_work_day %}
+                <br><span class="badge bg-secondary mt-1">Выходной</span>
+                {% endif %}
+                <div class="mt-2">
+                    <small>{{ day.total_minutes }} / {{ total_day_minutes }} мин.</small>
+                </div>
+            </div>
+            
+            <div class="orders-container" id="orders-{{ day.date|date:'Y-m-d' }}"
+                 data-date="{{ day.date|date:'Y-m-d' }}">
+                {% for order in day.orders %}
+                <div class="order-brick" 
+                    data-order-id="{{ order.id }}"
+                    data-minutes="{{ order.planned_minutes }}"
+                    style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:300 }}px;">
+                    
+                    <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                    
+                    <h6>{{ order.title|truncatechars:20 }}</h6>
+                    <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
+                    <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
+                    
+                    {% if order.status %}
+                    <span class="badge status-badge bg-light text-dark">
+                        {{ order.status.name }}
+                    </span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="empty-column-message">
+                    Нет заказов
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if day.total_minutes > total_day_minutes %}
+            <div class="overlay-limit">
+                Превышение лимита!
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="unplanned-section">
+    <h4><i class="fas fa-inbox"></i> Заказы без даты</h4>
+    
+    <div class="unplanned-grid" id="unplanned-orders">
+        {% for order in orders_without_date %}
+        <div class="order-brick" 
+            data-order-id="{{ order.id }}"
+            data-minutes="{{ order.planned_minutes }}"
+            style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:100 }}px;">
+            
+            <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
+                <i class="fas fa-external-link-alt"></i>
+            </a>
+            
+            <h6>{{ order.title|truncatechars:20 }}</h6>
+            <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
+            <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
+            <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
+            
+            {% if order.status %}
+            <span class="badge status-badge bg-light text-dark">
+                {{ order.status.name }}
+            </span>
+            {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-muted">Нет заказов без даты</p>
+        {% endfor %}
+    </div>
+</div>

@@ -205,115 +205,68 @@
     display: none;
 }
 
+.planner-container {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.planner-grid {
+    min-width: max-content;
+}
+
+.planner-column {
+    min-width: 150px; /* Уменьшите ширину для множества колонок */
+}
+
+.week-navigation {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 100;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Планировщик заказов</h1>
     <div>
-        <a href="{% url 'planner_settings' %}" class="btn btn-outline-secondary me-2">
-            <i class="fas fa-cog"></i> Настройки
-        </a>
+        <h1>Планировщик заказов</h1>
+        <p class="text-muted mb-0">Неделя с {{ days.0.date|date:"d.m.Y" }}</p>
+    </div>
+    <div>
         <a href="{% url 'order_create' %}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Новый заказ
         </a>
     </div>
 </div>
 
+<!-- НАВИГАЦИЯ ПО НЕДЕЛЯМ - КОМПАКТНЫЙ ВАРИАНТ -->
+<div class="d-flex justify-content-center align-items-center mb-3 gap-2">
+    <a href="?weeks=remove" class="btn btn-outline-secondary btn-sm" data-action="remove-week" title="Убрать неделю">
+        <i class="fas fa-minus"></i>
+    </a>
+    
+    <a href="?weeks=1" class="btn btn-outline-secondary btn-sm" data-action="current-week" title="Текущая неделя">
+        <i class="fas fa-calendar-week"></i>
+    </a>
+    
+    <span class="mx-2">Показано недель: {{ weeks }}</span>
+    
+    <a href="?weeks=add" class="btn btn-outline-primary btn-sm" data-action="add-week" title="Добавить неделю">
+        <i class="fas fa-plus"></i>
+    </a>
+</div>
+
 <div class="alert alert-info">
     <i class="fas fa-info-circle"></i> Перетягивайте заказы в дни для планирования. Высота заказа соответствует его продолжительности.
 </div>
 
-<div class="planner-container">
-    <div class="planner-grid" id="planner-grid">
-        {% for day in days %}
-        <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
-             data-date="{{ day.date|date:'Y-m-d' }}"
-             data-total-minutes="{{ total_day_minutes }}">
-            
-            <div class="planner-header">
-                <h5>{{ day.date|date:"l" }}</h5>
-                <small>{{ day.date|date:"d.m.Y" }}</small>
-                <div class="day-utilization"></div>
-                {% if not day.is_work_day %}
-                <br><span class="badge bg-secondary mt-1">Выходной</span>
-                {% endif %}
-                <div class="mt-2">
-                    <small>{{ day.total_minutes }} / {{ total_day_minutes }} мин.</small>
-                </div>
-            </div>
-            
-            <div class="orders-container" id="orders-{{ day.date|date:'Y-m-d' }}"
-                 data-date="{{ day.date|date:'Y-m-d' }}">
-                {% for order in day.orders %}
-                <div class="order-brick" 
-                    data-order-id="{{ order.id }}"
-                    data-minutes="{{ order.planned_minutes }}"
-                    style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:300 }}px;">
-                    
-                    <!-- Ссылка на карточку заказа -->
-                    <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
-                        <i class="fas fa-external-link-alt"></i>
-                    </a>
-                    
-                    <h6>{{ order.title|truncatechars:20 }}</h6>
-                    <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
-                    <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
-                    
-                    {% if order.status %}
-                    <span class="badge status-badge bg-light text-dark">
-                        {{ order.status.name }}
-                    </span>
-                    {% endif %}
-                </div>
-                {% empty %}
-                <div class="empty-column-message">
-                    Нет заказов
-                </div>
-                {% endfor %}
-            </div>
-            
-            {% if day.total_minutes > total_day_minutes %}
-            <div class="overlay-limit">
-                Превышение лимита!
-            </div>
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
-</div>
-
-<div class="unplanned-section">
-    <h4><i class="fas fa-inbox"></i> Заказы без даты</h4>
-    
-    <div class="unplanned-grid" id="unplanned-orders">
-        {% for order in orders_without_date %}
-        <div class="order-brick" 
-            data-order-id="{{ order.id }}"
-            data-minutes="{{ order.planned_minutes }}"
-            style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:100 }}px;">
-            
-            <!-- Ссылка на карточку заказа -->
-            <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
-                <i class="fas fa-external-link-alt"></i>
-            </a>
-            
-            <h6>{{ order.title|truncatechars:20 }}</h6>
-            <p><i class="fas fa-user"></i> {{ order.customer.first_name }}</p>
-            <p><i class="fas fa-phone"></i> {{ order.customer.phone }}</p>
-            <span class="minutes-badge">{{ order.planned_minutes }} мин</span>
-            
-            {% if order.status %}
-            <span class="badge status-badge bg-light text-dark">
-                {{ order.status.name }}
-            </span>
-            {% endif %}
-        </div>
-        {% empty %}
-        <p class="text-muted">Нет заказов без даты</p>
-        {% endfor %}
-    </div>
+<!-- Остальной код планера -->
+<div id="planner-container">
+    {% include 'atelier/planner_partial.html' %}
 </div>
 {% endblock %}
 
@@ -321,30 +274,32 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Инициализация планера...');
+    initializePlanner();
+});
+
+// Основная функция инициализации планера
+function initializePlanner() {
+    console.log('Переинициализация планера...');
     
-    // 1. Инициализация незапланированных заказов - РАЗРЕШАЕМ перетаскивание ИЗ этой области
+    // 1. Инициализация незапланированных заказов
     const unplannedContainer = document.getElementById('unplanned-orders');
     if (unplannedContainer) {
         try {
             new Sortable(unplannedContainer, {
                 group: {
                     name: 'orders',
-                    pull: 'clone', // Разрешаем брать оттуда
-                    put: true      // Разрешаем возвращать обратно
+                    pull: 'clone',
+                    put: true
                 },
-                sort: true,        // Разрешаем сортировку
+                sort: true,
                 animation: 150,
                 ghostClass: 'sortable-ghost',
                 onEnd: function(evt) {
-                    // Если переместили в другую колонку
                     if (evt.to !== evt.from && evt.to.classList.contains('orders-container')) {
-                        // Элемент уже обработан в onAdd целевой колонки
                         return;
                     }
                     
-                    // Если вернули обратно в "без даты" или переместили внутри
                     if (evt.from && evt.item) {
-                        // Для перемещения внутри "без даты" обновляем порядок
                         if (evt.to === evt.from) {
                             updateUnplannedOrderOrder(evt.to);
                         }
@@ -369,14 +324,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 group: {
                     name: 'orders',
                     put: function(to, from, dragEl) {
-                        // Проверяем лимит времени
                         try {
                             let totalMinutes = 0;
                             const children = to.children;
                             
                             if (!children) return true;
                             
-                            // Суммируем минуты всех заказов в колонке
                             for (let i = 0; i < children.length; i++) {
                                 const child = children[i];
                                 if (child.classList.contains('order-brick') && child !== dragEl) {
@@ -385,11 +338,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             }
                             
-                            // Добавляем минуты перетаскиваемого заказа
                             const dragMinutes = parseInt(dragEl.dataset.minutes || '0');
                             totalMinutes += dragMinutes;
                             
-                            // Проверяем лимит
                             if (totalMinutes > totalDayMinutes) {
                                 alert('Превышен лимит времени в этом дне! Максимум: ' + totalDayMinutes + ' минут.');
                                 return false;
@@ -407,25 +358,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 chosenClass: 'sortable-chosen',
                 dragClass: 'sortable-drag',
                 onAdd: function(evt) {
-                    console.log('onAdd:', {from: evt.from.id, to: evt.to.id, item: evt.item.dataset.orderId});
-                    console.log('onRemove:', {from: evt.from.id, to: evt.to.id, item: evt.item.dataset.orderId});                            
+                    console.log('Заказ перемещен:', evt.item.dataset.orderId);
                     const orderId = evt.item.dataset.orderId;
                     const columnElement = evt.to.closest('.planner-column');
                     if (!orderId || !columnElement) return;
                     
                     const date = columnElement.dataset.date;
                     
-                    // Определяем порядок в колонке
                     const orders = evt.to.querySelectorAll('.order-brick');
                     let orderInDay = Array.from(orders).indexOf(evt.item);
                     
                     if (orderInDay >= 0) {
-                        console.log('Заказ перемещен:', orderId, 'на', date, 'позиция', orderInDay);
                         updateOrderPlanning(orderId, date, orderInDay);
                     }
                 },
                 onUpdate: function(evt) {
-                    // Обновляем порядок при изменении позиции внутри колонки
                     const columnElement = evt.to.closest('.planner-column');
                     if (!columnElement) return;
                     
@@ -442,13 +389,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 },
                 onRemove: function(evt) {
-                    console.log('onAdd:', {from: evt.from.id, to: evt.to.id, item: evt.item.dataset.orderId});
-                    console.log('onRemove:', {from: evt.from.id, to: evt.to.id, item: evt.item.dataset.orderId});                    
-                    // Если заказ перемещается из колонки дня обратно в "без даты"
                     if (evt.to && evt.to.id === 'unplanned-orders') {
                         const orderId = evt.item.dataset.orderId;
                         if (orderId) {
-                            console.log('Заказ перемещен в "без даты":', orderId);
                             updateOrderPlanning(orderId, null, null);
                         }
                     }
@@ -459,51 +402,149 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Функция обновления планирования
-    function updateOrderPlanning(orderId, date, orderInDay) {
-        console.log('Обновление заказа:', {orderId, date, orderInDay});
-        
-        fetch('{% url "update_order_planning" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({
-                order_id: orderId,
-                planned_date: date,
-                order_in_day: orderInDay
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Заказ успешно обновлен');
-                // Плавное обновление страницы через 0.5 секунды
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
-            } else {
-                console.error('Ошибка:', data.error);
-                alert('Ошибка при обновлении заказа: ' + data.error);
-                window.location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка сети:', error);
-            alert('Ошибка сети: ' + error);
-            window.location.reload();
+    // 3. Добавляем обработчики для кнопок навигации
+    setupWeekNavigation();
+    
+    console.log('Планировщик полностью переинициализирован');
+}
+
+// Настройка навигации по неделям
+function setupWeekNavigation() {
+    // Кнопка "Добавить неделю"
+    const addWeekBtn = document.querySelector('[href*="weeks=add"]');
+    if (addWeekBtn) {
+        addWeekBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            loadMoreWeeks('add');
         });
     }
-
-    // Функция обновления порядка в "без даты"
-    function updateUnplannedOrderOrder(container) {
-        const orders = container.querySelectorAll('.order-brick');
-        console.log('Обновление порядка в "без даты"');
-        // Здесь можно добавить логику для сохранения порядка, если нужно
+    
+    // Кнопка "Убрать неделю"
+    const removeWeekBtn = document.querySelector('[href*="weeks=remove"]');
+    if (removeWeekBtn) {
+        removeWeekBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            loadMoreWeeks('remove');
+        });
     }
     
-    console.log('Планировщик инициализирован');
+    // Кнопка "Текущая неделя"
+    const currentWeekBtn = document.querySelector('[href*="weeks=1"]');
+    if (currentWeekBtn) {
+        currentWeekBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            loadCurrentWeek();
+        });
+    }
+}
+
+// Функция загрузки дополнительных недель
+function loadMoreWeeks(direction) {
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentWeeks = parseInt(urlParams.get('weeks') || 1);
+    let startDate = urlParams.get('start_date');
+    
+    // Если start_date не указан, используем текущую дату
+    if (!startDate) {
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+        startDate = startOfWeek.toISOString().split('T')[0];
+    }
+    
+    if (direction === 'add') {
+        currentWeeks += 1;
+    } else if (direction === 'remove' && currentWeeks > 1) {
+        currentWeeks -= 1;
+    } else {
+        return; // Нельзя убрать последнюю неделю
+    }
+    
+    // Обновляем страницу с новыми параметрами
+    window.location.href = `?start_date=${startDate}&weeks=${currentWeeks}`;
+}
+
+// Функция загрузки текущей недели
+function loadCurrentWeek() {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+    const startDate = startOfWeek.toISOString().split('T')[0];
+    
+    window.location.href = `?start_date=${startDate}&weeks=1`;
+}
+
+// Функция обновления планирования заказа
+function updateOrderPlanning(orderId, date, orderInDay) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const startDate = urlParams.get('start_date');
+    const weeks = urlParams.get('weeks');
+    
+    fetch('{% url "update_order_planning" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            order_id: orderId,
+            planned_date: date,
+            order_in_day: orderInDay,
+            start_date: startDate,
+            weeks: weeks
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.html) {
+                // AJAX обновление
+                document.getElementById('planner-container').innerHTML = data.html;
+                initializePlanner();
+            } else {
+                // Fallback: перезагрузка
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300);
+            }
+        } else {
+            alert('Ошибка при обновлении заказа: ' + data.error);
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка сети:', error);
+        alert('Ошибка сети: ' + error);
+        setTimeout(() => {
+            window.location.reload();
+        }, 300);
+    });
+}
+
+// Функция обновления порядка в "без даты"
+function updateUnplannedOrderOrder(container) {
+    const orders = container.querySelectorAll('.order-brick');
+    console.log('Обновление порядка в "без даты"');
+    // Здесь можно добавить логику для сохранения порядка
+}
+
+// Обработчик кнопок навигации (альтернативный вариант)
+document.addEventListener('click', function(e) {
+    if (e.target.closest('[data-action="add-week"]')) {
+        e.preventDefault();
+        loadMoreWeeks('add');
+    } else if (e.target.closest('[data-action="remove-week"]')) {
+        e.preventDefault();
+        loadMoreWeeks('remove');
+    } else if (e.target.closest('[data-action="current-week"]')) {
+        e.preventDefault();
+        loadCurrentWeek();
+    }
 });
+
+console.log('JavaScript планера загружен');
 </script>
 {% endblock %}

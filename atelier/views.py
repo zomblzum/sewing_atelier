@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import json
 from .models import Customer, Order, OrderStatus, PlannerSettings, Category
 from .forms import CustomerForm, OrderForm, OrderStatusForm, PlannerSettingsForm, CategoryForm, RegisterForm, LoginForm
+from django.template.loader import render_to_string
 
 # Auth views
 def register_view(request):
@@ -69,27 +70,31 @@ def logout_view(request):
 # Main views with user isolation
 @login_required
 def index(request):
-    # Получаем настройки планера для текущего пользователя
-    planner_settings, created = PlannerSettings.objects.get_or_create(user=request.user)
+    # Получаем начальную дату из параметра или используем текущую
+    start_date_str = request.GET.get('start_date')
+    if start_date_str:
+        start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    else:
+        start_date = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
     
-    # Получаем заказы с планируемыми датами текущего пользователя
+    weeks_to_show = int(request.GET.get('weeks', 1))  # Количество недель для показа
+    
+    planner_settings, created = PlannerSettings.objects.get_or_create(user=request.user)
     orders = Order.objects.filter(user=request.user, planned_date__isnull=False).order_by('planned_date', 'order_in_day')
     
-    # Генерируем дни для отображения (текущая неделя)
-    today = timezone.now().date()
-    start_of_week = today - timedelta(days=today.weekday())
+    # Генерируем дни для отображения (недели)
     days_of_week = []
+    total_days = 7 * weeks_to_show
     
     if planner_settings.work_days.strip():
         work_days = list(map(int, planner_settings.work_days.split(',')))
     else:
-        work_days = [1, 2, 3, 4, 5]  # Значение по умолчанию
+        work_days = [1, 2, 3, 4, 5]
     
-    for i in range(7):
-        day_date = start_of_week + timedelta(days=i)
+    for i in range(total_days):
+        day_date = start_date + timedelta(days=i)
         day_orders = orders.filter(planned_date=day_date)
         
-        # Рассчитываем общую занятость дня в минутах
         total_minutes = sum(order.planned_minutes for order in day_orders)
         day_percentage = (total_minutes / (planner_settings.hours_per_day * 60)) * 100
         
@@ -105,7 +110,9 @@ def index(request):
         'days': days_of_week,
         'planner_settings': planner_settings,
         'orders_without_date': Order.objects.filter(user=request.user, planned_date__isnull=True),
-        'total_day_minutes': planner_settings.hours_per_day * 60
+        'total_day_minutes': planner_settings.hours_per_day * 60,
+        'start_date': start_date,
+        'weeks': weeks_to_show
     }
     return render(request, 'atelier/index.html', context)
 
@@ -131,7 +138,57 @@ def update_order_planning(request):
             order.order_in_day = None
         
         order.save()
+        
+        # Если это AJAX-запрос, возвращаем HTML планера
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Получаем параметры из запроса
+            start_date_str = data.get('start_date')
+            weeks = int(data.get('weeks', 1))
+            
+            if start_date_str:
+                start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            else:
+                start_date = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
+            
+            # Рендерим только часть с планером
+            planner_settings = PlannerSettings.objects.get(user=request.user)
+            orders = Order.objects.filter(user=request.user, planned_date__isnull=False).order_by('planned_date', 'order_in_day')
+            
+            days_of_week = []
+            total_days = 7 * weeks
+            
+            if planner_settings.work_days.strip():
+                work_days = list(map(int, planner_settings.work_days.split(',')))
+            else:
+                work_days = [1, 2, 3, 4, 5]
+            
+            for i in range(total_days):
+                day_date = start_date + timedelta(days=i)
+                day_orders = orders.filter(planned_date=day_date)
+                
+                total_minutes = sum(order.planned_minutes for order in day_orders)
+                day_percentage = (total_minutes / (planner_settings.hours_per_day * 60)) * 100
+                
+                days_of_week.append({
+                    'date': day_date,
+                    'orders': day_orders,
+                    'is_work_day': (day_date.weekday() + 1) in work_days,
+                    'total_minutes': total_minutes,
+                    'day_percentage': min(day_percentage, 100)
+                })
+            
+            html = render_to_string('atelier/planner_partial.html', {
+                'days': days_of_week,
+                'planner_settings': planner_settings,
+                'total_day_minutes': planner_settings.hours_per_day * 60,
+                'start_date': start_date,
+                'weeks': weeks
+            })
+            
+            return JsonResponse({'success': True, 'html': html})
+        
         return JsonResponse({'success': True})
+        
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
