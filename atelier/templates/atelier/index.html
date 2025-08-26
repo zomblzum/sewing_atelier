@@ -337,9 +337,7 @@
             </span>
         </h4>
         <small class="text-muted">
-            {% if days.0.date and days|last.date %}
-                {{ days.0.date|date:"d.m.Y" }} - {{ days|last.date|date:"d.m.Y" }}
-            {% endif %}
+            Неделя от {{ days.0.date|date:"d.m.Y" }}
         </small>
     </div>
     
