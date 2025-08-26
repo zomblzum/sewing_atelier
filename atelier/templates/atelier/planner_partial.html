@@ -23,7 +23,7 @@
                 <div class="order-brick" 
                     data-order-id="{{ order.id }}"
                     data-minutes="{{ order.planned_minutes }}"
-                    style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:300 }}px;">
+                    style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;"
                     
                     <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
                         <i class="fas fa-external-link-alt"></i>
@@ -64,7 +64,7 @@
         <div class="order-brick" 
             data-order-id="{{ order.id }}"
             data-minutes="{{ order.planned_minutes }}"
-            style="background-color: {{ order.color }}; height: {{ order.planned_minutes|div:total_day_minutes|mul:100 }}px;">
+            style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 100 %}px;"
             
             <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
                 <i class="fas fa-external-link-alt"></i>
