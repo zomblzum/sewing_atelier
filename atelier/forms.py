@@ -36,13 +36,35 @@ class CustomerForm(forms.ModelForm):
         }
 
 class OrderForm(forms.ModelForm):
+    customer_first_name = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label="Имя клиента",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Введите имя',
+            'autocomplete': 'off',
+            'id': 'id_customer_first_name'
+        })
+    )
+    customer_phone = forms.CharField(
+        max_length=17, 
+        required=False, 
+        label="Телефон клиента",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': '+79991234567',
+            'autocomplete': 'off',
+            'id': 'id_customer_phone'
+        })
+    )
+    
     class Meta:
         model = Order
-        fields = ['title', 'customer', 'category', 'price', 'comment', 'status', 
+        fields = ['title', 'category', 'price', 'comment', 'status', 
                  'planned_date', 'planned_minutes']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'customer': forms.Select(attrs={'class': 'form-control'}),
             'category': forms.Select(attrs={'class': 'form-control', 'id': 'id_category'}),
             'price': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_price'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -64,10 +86,55 @@ class OrderForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         if self.user:
-            # Фильтруем клиентов, категории и статусы только текущего пользователя
-            self.fields['customer'].queryset = Customer.objects.filter(user=self.user)
+            # Фильтруем категории и статусы только текущего пользователя
             self.fields['category'].queryset = Category.objects.filter(user=self.user)
             self.fields['status'].queryset = OrderStatus.objects.filter(user=self.user)
+        
+        # Заполняем поля имени и телефона, если заказ уже существует
+        if self.instance and self.instance.pk and self.instance.customer:
+            self.initial['customer_first_name'] = self.instance.customer.first_name
+            self.initial['customer_phone'] = self.instance.customer.phone
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        first_name = cleaned_data.get('customer_first_name')
+        phone = cleaned_data.get('customer_phone')
+        
+        # Валидация обязательных полей
+        if not first_name:
+            self.add_error('customer_first_name', 'Обязательное поле')
+        if not phone:
+            self.add_error('customer_phone', 'Обязательное поле')
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        order = super().save(commit=False)
+        first_name = self.cleaned_data['customer_first_name']
+        phone = self.cleaned_data['customer_phone']
+        
+        # Ищем существующего клиента или создаем нового
+        try:
+            customer = Customer.objects.get(user=self.user, phone=phone)
+            # Обновляем имя, если клиент уже существовал
+            customer.first_name = first_name
+            customer.save()
+        except Customer.DoesNotExist:
+            # Создаем нового клиента
+            customer = Customer.objects.create(
+                user=self.user,
+                first_name=first_name,
+                last_name='',  # Можно добавить логику для фамилии если нужно
+                phone=phone
+            )
+        
+        order.customer = customer
+        order.user = self.user  # Убедимся, что пользователь установлен
+        
+        if commit:
+            order.save()
+        
+        return order
 
 class OrderStatusForm(forms.ModelForm):
     class Meta:

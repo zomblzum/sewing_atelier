@@ -43,4 +43,6 @@ urlpatterns = [
 
     path('api/category/<int:pk>/price/', views.get_category_price, name='category_price'),
     path('check-day-limit/', views.check_day_limit, name='check_day_limit'),
+
+    path('customers/json/', views.customer_list_json, name='customer_list_json'),    
 ]

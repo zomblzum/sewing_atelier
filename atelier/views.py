@@ -449,3 +449,8 @@ def check_day_limit(request):
         return JsonResponse({'can_add': True})
     except Exception as e:
         return JsonResponse({'can_add': True, 'error': str(e)})
+    
+@login_required
+def customer_list_json(request):
+    customers = Customer.objects.filter(user=request.user).values('id', 'first_name', 'phone')
+    return JsonResponse(list(customers), safe=False)    
