@@ -470,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Также добавьте обработчик для кнопок вне Sortable
+// Обработчик для кнопок вне Sortable
 document.addEventListener('click', function(e) {
     if (e.target.closest('.order-link')) {
         e.stopPropagation();
@@ -562,17 +562,20 @@ function initializePlanner() {
                 chosenClass: 'sortable-chosen',
                 dragClass: 'sortable-drag',
                 onAdd: function(evt) {
+                    console.log('Заказ перемещен:', evt.item.dataset.orderId);
                     const orderId = evt.item.dataset.orderId;
-                    const isMain = evt.item.dataset.isMain === 'true';
+                    const columnElement = evt.to.closest('.planner-column');
+                    if (!orderId || !columnElement) return;
                     
-                    if (isMain) {
-                        // Для основных заказов используем дробление
-                        updateOrderPlanningWithSplitting(orderId, date, orderInDay);
-                    } else {
-                        // Для частей - простое перемещение
+                    const date = columnElement.dataset.date;
+                    
+                    const orders = evt.to.querySelectorAll('.order-brick');
+                    let orderInDay = Array.from(orders).indexOf(evt.item);
+                    
+                    if (orderInDay >= 0) {
                         updateOrderPlanning(orderId, date, orderInDay);
                     }
-                }
+                },
                 onUpdate: function(evt) {
                     const columnElement = evt.to.closest('.planner-column');
                     if (!columnElement) return;
@@ -613,7 +616,6 @@ function loadMoreWeeks(direction) {
     let startDate = urlParams.get('start_date');
     let newStartDate = startDate;
     
-    // Если start_date не указан, используем текущую дату
     if (!startDate) {
         const today = new Date();
         const startOfWeek = new Date(today);
@@ -623,13 +625,11 @@ function loadMoreWeeks(direction) {
     }
     
     if (direction === 'left') {
-        // Добавляем неделю слева - смещаем start_date на 7 дней назад
         const currentStartDate = new Date(startDate);
         currentStartDate.setDate(currentStartDate.getDate() - 7);
         newStartDate = currentStartDate.toISOString().split('T')[0];
         currentWeeks += 1;
     } else if (direction === 'right') {
-        // Добавляем неделю справа
         currentWeeks += 1;
     } else if (direction === 'remove' && currentWeeks > 1) {
         currentWeeks -= 1;
@@ -637,7 +637,6 @@ function loadMoreWeeks(direction) {
         return;
     }
     
-    // Обновляем страницу с новыми параметрами
     window.location.href = `?start_date=${newStartDate}&weeks=${currentWeeks}`;
 }
 
@@ -646,7 +645,6 @@ function manageWeeks(action) {
     let currentWeeks = parseInt(urlParams.get('weeks') || '1');
     let startDate = urlParams.get('start_date');
     
-    // Безопасная обработка даты
     if (!startDate) {
         const today = new Date();
         const startOfWeek = new Date(today);
@@ -656,18 +654,8 @@ function manageWeeks(action) {
     
     let newStartDate = startDate;
     
-    // Если start_date не указан, используем текущую дату
-    if (!startDate) {
-        const today = new Date();
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
-        startDate = startOfWeek.toISOString().split('T')[0];
-        newStartDate = startDate;
-    }
-    
     switch (action) {
         case 'add_left':
-            // Добавляем неделю слева - смещаем start_date на 7 дней назад
             const currentStartDate = new Date(startDate);
             currentStartDate.setDate(currentStartDate.getDate() - 7);
             newStartDate = currentStartDate.toISOString().split('T')[0];
@@ -675,12 +663,10 @@ function manageWeeks(action) {
             break;
             
         case 'add_right':
-            // Добавляем неделю справа
             currentWeeks += 1;
             break;
             
         case 'remove_left':
-            // Убираем неделю слева - смещаем start_date на 7 дней вперед
             if (currentWeeks > 1) {
                 const currentStartDate = new Date(startDate);
                 currentStartDate.setDate(currentStartDate.getDate() + 7);
@@ -690,14 +676,12 @@ function manageWeeks(action) {
             break;
             
         case 'remove_right':
-            // Убираем неделю справа
             if (currentWeeks > 1) {
                 currentWeeks -= 1;
             }
             break;
             
         case 'reset':
-            // Сброс к текущей неделе
             const today = new Date();
             const startOfWeek = new Date(today);
             startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
@@ -709,11 +693,9 @@ function manageWeeks(action) {
             return;
     }
     
-    // Обновляем страницу с новыми параметрами
     window.location.href = `?start_date=${newStartDate}&weeks=${currentWeeks}`;
 }
 
-// Функция загрузки текущей недели
 function loadCurrentWeek() {
     const today = new Date();
     const startOfWeek = new Date(today);
@@ -723,13 +705,11 @@ function loadCurrentWeek() {
     window.location.href = `?start_date=${startDate}&weeks=1`;
 }
 
-// Функция обновления планирования заказа
 function updateOrderPlanning(orderId, date, orderInDay) {
     const urlParams = new URLSearchParams(window.location.search);
     const startDate = urlParams.get('start_date');
     const weeks = urlParams.get('weeks');
     
-    // Преобразуем orderInDay в число или null
     let orderInDayValue = orderInDay;
     if (orderInDay === null || orderInDay === undefined || orderInDay === '') {
         orderInDayValue = null;
@@ -756,16 +736,13 @@ function updateOrderPlanning(orderId, date, orderInDay) {
     .then(data => {
         if (data.success) {
             if (data.html) {
-                // Заменяем ВЕСЬ контент страницы
                 document.documentElement.innerHTML = data.html;
-                // Переинициализируем планер после замены контента
                 setTimeout(() => {
                     if (typeof initializePlanner === 'function') {
                         initializePlanner();
                     }
                 }, 100);
             } else {
-                // Fallback: перезагрузка страницы
                 setTimeout(() => {
                     window.location.reload();
                 }, 300);
@@ -786,11 +763,9 @@ function updateOrderPlanning(orderId, date, orderInDay) {
     });
 }
 
-// Функция обновления порядка в "без даты"
 function updateUnplannedOrderOrder(container) {
     const orders = container.querySelectorAll('.order-brick');
     console.log('Обновление порядка в "без даты"');
-    // Здесь можно добавить логику для сохранения порядка
 }
 
 console.log('JavaScript планера загружен');
