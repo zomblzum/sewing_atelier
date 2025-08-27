@@ -2,24 +2,41 @@
     <div class="planner-container">
         <div class="planner-grid">
             {% for day in days %}
-            <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
-                 data-date="{{ day.date|date:'Y-m-d' }}" data-total-minutes="{{ total_day_minutes }}">
+            <div class="planner-column {% if not day.is_work_day %}weekend{% endif %} {% if day.total_minutes > total_day_minutes %}over-limit{% endif %}" 
+                data-date="{{ day.date|date:'Y-m-d' }}" data-total-minutes="{{ total_day_minutes }}">
+                
+                <!-- Индикатор превышения лимита -->
+                {% if day.total_minutes > total_day_minutes %}
+                <div class="overlay-limit">
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <div>Превышение!</div>
+                        <small>{{ day.total_minutes - total_day_minutes }} мин.</small>
+                    </div>
+                </div>
+                {% endif %}
                 
                 <div class="planner-header">
                     <h5>{{ day.date|date:"d.m" }}</h5>
                     <div class="text-muted small">{{ day.date|date:"l" }}</div>
-                    <!-- Убрали day.day_percentage из стиля, будем использовать JS -->
+                    <!-- Добавляем отображение времени -->
+                    <div class="time-usage small text-muted mt-1">
+                        {{ day.total_minutes }} / {{ total_day_minutes }} мин.
+                    </div>
                     <div class="day-utilization" data-percentage="{{ day.day_percentage }}"></div>
                 </div>
                 
                 <div class="orders-container" id="orders-{{ day.date|date:'Y-m-d' }}">
                     {% for order in day.orders %}
-                    <a href="{% url 'order_detail' pk=order.pk %}" class="order-link">
-                        <i class="fas fa-external-link-alt"></i>
-                    </a>
                     <div class="order-brick" data-order-id="{{ order.pk }}" data-minutes="{{ order.planned_minutes }}"
-                         style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;"
-                         title="{{ order.title }} - {{ order.customer.first_name }} ({{ order.planned_minutes }} мин.)">
+                        style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;"
+                        title="{{ order.title }} - {{ order.customer.first_name }} ({{ order.planned_minutes }} мин.)">
+                        
+                        <!-- Ссылка ДОЛЖНА быть ВНУТРИ order-brick -->
+                        <a href="{% url 'order_detail' pk=order.pk %}" class="order-link">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                        
                         <div class="order-content">
                             <h6>{{ order.title|truncatechars:20 }}</h6>
                             <p class="mb-1">{{ order.customer.first_name }}</p>
