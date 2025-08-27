@@ -358,22 +358,6 @@
     position: relative;
     z-index: 20;
 }
-
-.order-part {
-    opacity: 0.8;
-    border-left: 4px solid #ffc107;
-}
-
-.order-parts-badge {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 10px;
-}
 </style>
 {% endblock %}
 
@@ -562,17 +546,20 @@ function initializePlanner() {
                 chosenClass: 'sortable-chosen',
                 dragClass: 'sortable-drag',
                 onAdd: function(evt) {
+                    console.log('Заказ перемещен:', evt.item.dataset.orderId);
                     const orderId = evt.item.dataset.orderId;
-                    const isMain = evt.item.dataset.isMain === 'true';
+                    const columnElement = evt.to.closest('.planner-column');
+                    if (!orderId || !columnElement) return;
                     
-                    if (isMain) {
-                        // Для основных заказов используем дробление
-                        updateOrderPlanningWithSplitting(orderId, date, orderInDay);
-                    } else {
-                        // Для частей - простое перемещение
+                    const date = columnElement.dataset.date;
+                    
+                    const orders = evt.to.querySelectorAll('.order-brick');
+                    let orderInDay = Array.from(orders).indexOf(evt.item);
+                    
+                    if (orderInDay >= 0) {
                         updateOrderPlanning(orderId, date, orderInDay);
                     }
-                }
+                },
                 onUpdate: function(evt) {
                     const columnElement = evt.to.closest('.planner-column');
                     if (!columnElement) return;

@@ -101,42 +101,6 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
-    parent_order = models.ForeignKey(
-        'self',
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='child_orders',
-        verbose_name="Родительский заказ"
-    )
-    is_main_part = models.BooleanField(default=True, verbose_name="Основная часть")
-    part_number = models.PositiveIntegerField(default=1, verbose_name="Номер части")
-    total_parts = models.PositiveIntegerField(default=1, verbose_name="Всего частей")
-    
-    def get_all_parts(self):
-        """Возвращает все части заказа"""
-        if self.is_main_part:
-            return Order.objects.filter(
-                Q(id=self.id) | Q(parent_order=self)
-            ).order_by('part_number')
-        elif self.parent_order:
-            return self.parent_order.get_all_parts()
-        return Order.objects.filter(id=self.id)
-    
-    def get_remaining_minutes(self):
-        """Возвращает оставшееся время для распределения"""
-        if self.is_main_part:
-            total_distributed = sum(
-                part.planned_minutes for part in self.get_all_parts()
-            )
-            return max(0, self.planned_minutes - total_distributed)
-        return 0
-    
-    def redistribute_parts(self):
-        """Перераспределяет части заказа"""
-        if not self.is_main_part:
-            return    
-
     class Meta:
         verbose_name = "Заказ"
         verbose_name_plural = "Заказы"
