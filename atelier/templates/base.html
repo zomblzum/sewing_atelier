@@ -44,9 +44,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'customer_list' %}">Клиенты</a>
                     </li>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="{% url 'planner_settings' %}">Настройки</a>
-                    </li>
+                    </li> -->
                     {% endif %}
                 </ul>
                 
@@ -57,10 +57,10 @@
                             <i class="fas fa-user"></i> {{ user.username }}
                         </a>
                         <ul class="dropdown-menu">
-                            <!-- <li><a class="dropdown-item" href="{% url 'planner_settings' %}">
+                            <li><a class="dropdown-item" href="{% url 'planner_settings' %}">
                                 <i class="fas fa-cog"></i> Настройки
                             </a></li>
-                            <li><hr class="dropdown-divider"></li> -->
+                            <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="post" action="{% url 'logout' %}" class="d-inline">
                                     {% csrf_token %}
