@@ -18,7 +18,7 @@
                         <i class="fas fa-external-link-alt"></i>
                     </a>
                     <div class="order-brick" data-order-id="{{ order.pk }}" data-minutes="{{ order.planned_minutes }}"
-                         style="background-color: {{ order.color }}; height: {{ order.planned_minutes|divide:total_day_minutes|multiply:300 }}px;"
+                         style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;"
                          title="{{ order.title }} - {{ order.customer.first_name }} ({{ order.planned_minutes }} мин.)">
                         <div class="order-content">
                             <h6>{{ order.title|truncatechars:20 }}</h6>
