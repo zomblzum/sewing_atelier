@@ -4,7 +4,34 @@
 
 {% block extra_head %}
 <style>
-<style>
+.add-order-btn-container {
+    padding: 10px 0;
+}
+
+.add-order-btn {
+    border: 2px dashed #6c757d;
+    background-color: rgba(108, 117, 125, 0.1);
+    transition: all 0.3s ease;
+    opacity: 0.8;
+}
+
+.add-order-btn:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-color: #0d6efd;
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+/* Для визуального выделения */
+.planner-column {
+    position: relative;
+    padding-bottom: 60px; /* Место для кнопки */
+}
+
+.orders-container {
+    min-height: 300px;
+    flex-grow: 1;
+}
 .list-group-item {
     cursor: pointer;
     border: 1px solid #dee2e6;
@@ -43,6 +70,8 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const plannedDateFromUrl = urlParams.get('planned_date'); 
     const categorySelect = document.getElementById('id_category');
     const priceInput = document.getElementById('id_price');
     const plannedDateInput = document.getElementById('id_planned_date');
@@ -51,6 +80,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const firstNameSuggestions = document.getElementById('customerFirstNameSuggestions');
     const phoneSuggestions = document.getElementById('customerPhoneSuggestions');
     
+    if (plannedDateFromUrl && plannedDateInput && !plannedDateInput.value) {
+        plannedDateInput.value = plannedDateFromUrl;
+        console.log('Auto-filled planned date:', plannedDateFromUrl);
+    }   
+
     let customersData = [];
     let debounceTimer;
 

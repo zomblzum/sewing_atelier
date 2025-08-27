@@ -378,15 +378,33 @@ def order_detail(request, pk):
 
 @login_required
 def order_create(request):
+    # Получаем дату из параметра URL
+    planned_date_str = request.GET.get('planned_date')
+    
     if request.method == 'POST':
         form = OrderForm(request.POST, user=request.user)
         if form.is_valid():
             order = form.save(commit=False)
             order.user = request.user
+            
+            # Сохраняем planned_date из формы (может быть переопределен пользователем)
+            if form.cleaned_data.get('planned_date'):
+                order.planned_date = form.cleaned_data['planned_date']
+            
             order.save()
             return redirect('index')
     else:
-        form = OrderForm(user=request.user)
+        # Создаем форму с начальными значениями
+        initial = {}
+        if planned_date_str:
+            try:
+                planned_date = timezone.datetime.strptime(planned_date_str, '%Y-%m-%d').date()
+                initial['planned_date'] = planned_date
+            except ValueError:
+                pass
+        
+        form = OrderForm(user=request.user, initial=initial)
+    
     return render(request, 'atelier/order_form.html', {'form': form})
 
 @login_required
