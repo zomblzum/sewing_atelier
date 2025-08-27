@@ -2,7 +2,7 @@
     <div class="planner-container">
         <div class="planner-grid">
             {% for day in days %}
-            <div class="planner-column {% if not day.is_work_day %}weekend{% endif %} {% if day.total_minutes > total_day_minutes %}over-limit{% endif %}" 
+            <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
                 data-date="{{ day.date|date:'Y-m-d' }}" data-total-minutes="{{ total_day_minutes }}">
                 
                 <!-- Индикатор превышения лимита -->
@@ -47,7 +47,13 @@
                     <div class="empty-column-message">Нет заказов</div>
                     {% endfor %}
                 </div>
-                
+
+                    {% if day.total_minutes > total_day_minutes %}
+                    <div class="overlay-limit">
+                        Превышение лимита!
+                    </div>
+                    {% endif %}                
+                        
                 <!-- Кнопка добавления заказа -->
                 <div class="add-order-btn-container">
                     <a href="{% url 'order_create' %}?planned_date={{ day.date|date:'Y-m-d' }}" 
