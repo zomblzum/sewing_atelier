@@ -1,16 +1,30 @@
+{% load math_filters %}
+
 <div id="planner-container">
     <div class="planner-container">
         <div class="planner-grid">
             {% for day in days %}
-            <div class="planner-column {% if not day.is_work_day %}weekend{% endif %}" 
+            <div class="planner-column {% if not day.is_work_day %}weekend{% endif %} {% if day.total_minutes > total_day_minutes %}over-limit{% endif %}" 
                 data-date="{{ day.date|date:'Y-m-d' }}" data-total-minutes="{{ total_day_minutes }}">
+                
+                <!-- Индикатор превышения лимита -->
+                {% if day.total_minutes > total_day_minutes %}
+                <div class="overlay-limit">
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <div>Превышение!</div>
+                    </div>
+                </div>
+                {% endif %}
                                
                 <div class="planner-header">
                     <h5>{{ day.date|date:"d.m" }}</h5>
                     <div class="text-muted small">{{ day.date|date:"l" }}</div>
-                    <!-- Добавляем отображение времени -->
                     <div class="time-usage small text-muted mt-1">
                         {{ day.total_minutes }} / {{ total_day_minutes }} мин.
+                        {% if day.total_minutes > total_day_minutes %}
+                        <span class="text-danger">(+{{ day.total_minutes|subtract:total_day_minutes }})</span>
+                        {% endif %}
                     </div>
                     <div class="day-utilization" data-percentage="{{ day.day_percentage }}"></div>
                 </div>
@@ -21,7 +35,6 @@
                         style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;"
                         title="{{ order.title }} - {{ order.customer.first_name }} ({{ order.planned_minutes }} мин.)">
                         
-                        <!-- Ссылка ДОЛЖНА быть ВНУТРИ order-brick -->
                         <a href="{% url 'order_detail' pk=order.pk %}" class="order-link">
                             <i class="fas fa-external-link-alt"></i>
                         </a>
@@ -36,12 +49,6 @@
                     <div class="empty-column-message">Нет заказов</div>
                     {% endfor %}
                 </div>
-
-                    {% if day.total_minutes > total_day_minutes %}
-                    <div class="overlay-limit">
-                        Превышение лимита!
-                    </div>
-                    {% endif %}                
                         
                 <!-- Кнопка добавления заказа -->
                 <div class="add-order-btn-container">
@@ -68,7 +75,6 @@
             data-minutes="{{ order.planned_minutes }}"
             style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;">
             
-            <!-- Ссылка на карточку заказа -->
             <a href="{% url 'order_detail' pk=order.pk %}" class="order-link" title="Открыть карточку заказа">
                 <i class="fas fa-external-link-alt"></i>
             </a>
