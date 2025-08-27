@@ -31,9 +31,19 @@
                 
                 <div class="orders-container" id="orders-{{ day.date|date:'Y-m-d' }}">
                     {% for order in day.orders %}
-                    <div class="order-brick" data-order-id="{{ order.pk }}" data-minutes="{{ order.planned_minutes }}"
+                    {% if order.is_main_part or not order.parent_order %}
+                    <div class="order-brick {% if not order.is_main_part %}order-part{% endif %}" 
+                        data-order-id="{{ order.pk }}" 
+                        data-minutes="{{ order.planned_minutes }}"
+                        data-is-main="{% if order.is_main_part %}true{% else %}false{% endif %}"
                         style="background-color: {{ order.color }}; height: {% widthratio order.planned_minutes total_day_minutes 300 %}px;"
                         title="{{ order.title }} - {{ order.customer.first_name }} ({{ order.planned_minutes }} мин.)">
+                        
+                        {% if order.total_parts > 1 %}
+                        <div class="order-parts-badge">
+                            {{ order.part_number }}/{{ order.total_parts }}
+                        </div>
+                        {% endif %}
                         
                         <a href="{% url 'order_detail' pk=order.pk %}" class="order-link">
                             <i class="fas fa-external-link-alt"></i>
@@ -45,6 +55,7 @@
                             <span class="minutes-badge">{{ order.planned_minutes }} мин.</span>
                         </div>
                     </div>
+                    {% endif %}
                     {% empty %}
                     <div class="empty-column-message">Нет заказов</div>
                     {% endfor %}
